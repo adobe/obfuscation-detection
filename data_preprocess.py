@@ -17,6 +17,9 @@ LABEL_FILES = [
 PROCESSED_TENSORS_DIR = 'data/processed_tensors/'
 FREQ_CUTOFF = 0.0003 # found from char_frequency.py
 TENSOR_LENGTH = 1024
+# cross reference powershell https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.1 
+# and python https://docs.python.org/2.7/library/codecs.html#standard-encodings
+ENCODING_TYPES = ['ascii', 'utf_16_be', 'utf_16_le', 'utf_16', 'utf_7', 'utf_8', 'utf_32', 'utf_32_be', 'utf_32_le', 'utf_8_sig']
 
 char_freq_file = open('char_freq.txt', 'r')
 char_dict = {}
@@ -53,14 +56,22 @@ for label_file in LABEL_FILES:
         x += 1
 
         ps_path = row[0].replace('\\', '/') # windows to mac file reading
-        try:
-            # parse powershell script
+        # parse powershell script
+        parsed = False
+        for codec in ENCODING_TYPES:
             try:
-                ps_file = open(DATA_DIR + ps_path, encoding='utf-8')
-                ps_contents = ''.join(ps_file.readlines())
+                ps_file = open(DATA_DIR + ps_path, encoding=codec)
+                ps_contents = ''.join(ps_file.readline())
+                parsed = True
             except:
-                ps_file = open(DATA_DIR + ps_path, encoding='utf-16')
-                ps_contents = ''.join(ps_file.readlines())
+                pass
+        # try:
+        #     ps_file = open(DATA_DIR + ps_path, encoding='utf-8')
+        #     ps_contents = ''.join(ps_file.readlines())
+        # except:
+        #     ps_file = open(DATA_DIR + ps_path, encoding='utf-16')
+        #     ps_contents = ''.join(ps_file.readlines())
+        if parsed:
             # construct one tensor for one whole powershell script
             try:
                 ps_tensor = torch.zeros(len(char_dict) + 1, TENSOR_LENGTH) # + 1 for case bit
@@ -81,9 +92,8 @@ for label_file in LABEL_FILES:
                 print(ps_contents[i])
                 traceback.print_exc()
                 print(e)
-        except:
+        else:
             unparseable += 1
-            pass # skip unparseable scripts
 print('unparseable files: {:d}'.format(unparseable))
 
 # print(ps_tensor[0])
@@ -93,6 +103,7 @@ print('unparseable files: {:d}'.format(unparseable))
 # print(ps_tensor[3].nonzero())
 # print(ps_tensor.shape)
 
+# sanity checks
 print(converted_tensors[0].shape)
 print(converted_tensors[0][23][0])
 print(converted_tensors[0][69][0])
