@@ -1,4 +1,5 @@
 import pandas as pd
+import traceback
 
 DATA_DIR = 'data/PowerShellCorpus/'
 LABELS_DIR = '../Revoke-Obfuscation/DataScience/'
@@ -24,32 +25,44 @@ for label_file in LABEL_FILES:
     # iterate through files
     for _, row in csv.iterrows():
         total_cmds += 1
-        ps_path = row[0].replace('\\', '/') # windows to mac file reading
         if total_cmds % 1000 == 0:
             print(total_cmds)
+        ps_path = row[0].replace('\\', '/') # windows to mac file reading
         try:
-            try:
-                ps_file = open(DATA_DIR + ps_path, encoding='utf-8')
-                ps_contents = ''.join(ps_file.readlines())
-            except:
-                ps_file = open(DATA_DIR + ps_path, encoding='utf-16')
-                ps_contents = ''.join(ps_file.readlines())
-            for char in ps_contents:
-                if char.isalpha():
-                    char = char.lower()
-                if char not in char_counts:
-                    char_counts[char] = 0
-                char_counts[char] += 1
+            # try:
+            #     ps_file = open(DATA_DIR + ps_path, encoding='utf-8')
+            #     ps_contents = ''.join(ps_file.readlines())
+            # except:
+            #     ps_file = open(DATA_DIR + ps_path, encoding='utf-16')
+            #     ps_contents = ''.join(ps_file.readlines())
+            # for char in ps_contents:
+            #     if char.isalpha():
+            #         char = char.lower()
+            #     if char not in char_counts:
+            #         char_counts[char] = 0
+            #     char_counts[char] += 1
+            #     total_chars += 1
+            ps_file = open(DATA_DIR + ps_path, 'rb')
+            byte = ps_file.read(1)
+            while byte:
+                byte = ps_file.read(1)
+                if byte not in char_counts:
+                    char_counts[byte] = 0
+                char_counts[byte] += 1
                 total_chars += 1
-        except:
+            ps_file.close()
+        except Exception as e:
+            traceback.print_exc()
+            print(e)
             unparsable += 1
 for char in char_counts:
     char_counts[char] /= total_chars
 for k, v in sorted(char_counts.items(), key=lambda p:p[1], reverse=True):
-    char_freq_file.write(k + ' ' + str(v) + '\n')
+    char_freq_file.write(str(k) + ' ' + str(v) + '\n')
 
 print('total commands:', total_cmds)
 print('unparseable commands:', unparsable)
 print('parseable commands:', total_cmds - unparsable)
 
+char_freq_file.close()
 # current cutoff is 0.0003691787536410754, or 0.0003
