@@ -43,6 +43,7 @@ print('len of chars:', len(char_dict))
 
 # iterate through labels
 x = 0
+unparseable = 0
 for label_file in LABEL_FILES:
     csv = pd.read_csv(LABELS_DIR + label_file)
     # iterate through files
@@ -81,7 +82,9 @@ for label_file in LABEL_FILES:
                 traceback.print_exc()
                 print(e)
         except:
+            unparseable += 1
             pass # skip unparseable scripts
+print('unparseable files: {:d}'.format(unparseable))
 
 # print(ps_tensor[0])
 # print(ps_tensor[0].nonzero())
@@ -90,7 +93,9 @@ for label_file in LABEL_FILES:
 # print(ps_tensor[3].nonzero())
 # print(ps_tensor.shape)
 
-print(converted_tensors[0][0].nonzero())
+print(converted_tensors[0].shape)
+print(converted_tensors[0][23][0])
+print(converted_tensors[0][69][0])
 print(tensor_labels[0])
 print(len(converted_tensors))
 print(len(tensor_labels))

@@ -88,11 +88,11 @@ class DeepCNN(nn.Module):
             # conv1
             nn.Conv2d(1, 256, kernel_size=(70, 7), stride=1),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(1,3), stride=3),
+            nn.MaxPool2d(kernel_size=(1, 3), stride=3),
             # conv2
             nn.Conv2d(256, 256, kernel_size=(70, 7), stride=1),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(1,3), stride=3),
+            nn.MaxPool2d(kernel_size=(1, 3), stride=3),
             # conv3
             nn.Conv2d(256, 256, kernel_size=(70, 3), stride=1),
             nn.ReLU(),
