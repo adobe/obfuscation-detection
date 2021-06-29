@@ -2,6 +2,8 @@ import argparse
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, confusion_matrix
+
 from models import *
 
 DATA_DIR = 'data/processed_tensors/'
@@ -72,19 +74,23 @@ val_data = ScriptDataset(torch.load(DATA_DIR + 'val_data.pth'), device)
 val_loader = torch.utils.data.DataLoader(val_data, batch_size=BATCH_SIZE, shuffle=False)
 print('loaded data:', len(train_data), len(val_data))
 
+best_val_acc = 0.
 if args.eval or not args.reset:
     # load checkpoint if eval or not retraining
     checkpoint = torch.load(model_file)
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     epoch = checkpoint['epoch']
-    print('loaded {:s} on epoch {:d} with val acc {:f}'.format(model_file, epoch, checkpoint['val_acc']))
+    val_acc = checkpoint['val_acc']
+    best_val_acc = val_acc
+    print('loaded {:s} on epoch {:d} with val acc {:f}'.format(model_file, epoch, val_acc))
 
 def eval_model(dataset_name, model, data_loader, num_data, loss_fn):
     model.eval()
     avg_loss = 0.
-    acc = 0.
     num_batches = 0
+    y_true = []
+    y_pred = []
     for _, (data, label) in enumerate(data_loader):
         # run model
         data, label = Variable(data), Variable(label)
@@ -95,13 +101,20 @@ def eval_model(dataset_name, model, data_loader, num_data, loss_fn):
         avg_loss += loss.data
         num_batches += 1
         # calculate accuracy
-        output_labels = torch.max(output, dim=1).indices
-        label = torch.max(label, dim=1).indices
-        acc += (output_labels == label).sum()
+        y_pred += list(torch.max(output, dim=1).indices.numpy())
+        y_true += list(torch.max(label, dim=1).indices.numpy())
     avg_loss /= num_batches
-    acc /= num_data
+    acc = accuracy_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred)
+    prec = precision_score(y_true, y_pred)
+    recall = recall_score(y_true, y_pred)
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
     print('\t{:s} loss: {:f}'.format(dataset_name, avg_loss))
-    print('\t{:s} acc: {:f}'.format(dataset_name, acc))
+    print('\t{:s} accuracy: {:f}'.format(dataset_name, acc))
+    print('\t{:s} f1: {:f}'.format(dataset_name, f1))
+    print('\t{:s} precision: {:f}'.format(dataset_name, prec))
+    print('\t{:s} recall: {:f}'.format(dataset_name, recall))
+    print('\t{:s} confusion matrix (tn, fp, fn, tp): {:d}, {:d}, {:d}, {:d}'.format(dataset_name, tn, fp, fn, tp))
     return avg_loss, acc
 
 if args.eval:
@@ -110,10 +123,8 @@ if args.eval:
     eval_model('val', model, val_loader, len(val_data), mse)
 else:
     # train model
-    best_val_acc = 0.
     for i in range(epoch, EPOCHS):
         print('epoch', i)
-
         # run training
         model.train()
         for batch_idx, (data, label) in enumerate(train_loader):
