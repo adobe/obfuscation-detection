@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser(description='obfuscation detection train file')
 parser.add_argument('--reset', help='start over training', action='store_true')
 parser.add_argument('--eval', help='eval model', action='store_true')
 parser.add_argument('--model', default='cnn', help='model to run (mlp, deep-mlp, cnn, deep-cnn)')
-parser.add_argument('--model_file', default='models/cnn-shallow-conv-1-fc-2048-1024.pth', help='model file to save/load')
+parser.add_argument('--model_file', default='cnn-shallow-conv-1-fc-2048-1024.pth', help='model file to save/load')
 parser.add_argument('--cuda_device', default=0, type=int, help='which cuda device to use')
 args = parser.parse_args()
 
@@ -43,7 +43,7 @@ elif args.model == 'cnn':
 elif args.model == 'deep-cnn':
     model = DeepCNN()
 
-model_file = args.model_file
+model_file = 'models/' + args.model_file
 
 device = torch.device('cpu')
 if torch.cuda.is_available():
