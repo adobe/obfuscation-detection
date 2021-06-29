@@ -10,7 +10,7 @@ LABEL_FILES = [
     'IseSteroids-obfuscation-labeledData.csv',
     'PoshCode-obfuscation-labeledData.csv',
     'TechNet-obfuscation-labeledData.csv',
-    'UnderhandedPowerShell-obfuscation-labeledData.csv'
+    # 'UnderhandedPowerShell-obfuscation-labeledData.csv', # not provided to us by author
 ]
 
 char_freq_file = open('char_freq.txt', 'x')
@@ -21,7 +21,7 @@ total_cmds = 0
 
 # iterate through labels
 for label_file in LABEL_FILES:
-    csv = pd.read_csv(LABELS_DIR + label_file)
+    csv = pd.read_csv(LABELS_DIR + label_file, encoding='utf-8')
     # iterate through files
     for _, row in csv.iterrows():
         total_cmds += 1
@@ -45,11 +45,17 @@ for label_file in LABEL_FILES:
             ps_file = open(DATA_DIR + ps_path, 'rb')
             byte = ps_file.read(1)
             while byte:
-                byte = ps_file.read(1)
+                try:
+                    byte_str = str(byte, 'utf-8')
+                    if byte_str.isalpha() and byte_str.isupper():
+                        byte = byte_str.lower().encode('utf-8')
+                except:
+                    pass
                 if byte not in char_counts:
                     char_counts[byte] = 0
                 char_counts[byte] += 1
                 total_chars += 1
+                byte = ps_file.read(1)
             ps_file.close()
         except Exception as e:
             traceback.print_exc()
