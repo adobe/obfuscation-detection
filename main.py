@@ -2,11 +2,11 @@ import argparse
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from models import MLP
+from models import DeepCNN
 
-MODEL_FILE = 'models/mlp-shallow-1024-512.pth'
+MODEL_FILE = 'models/cnn-deep-conv-9-fc-1024-1024.pth'
 DATA_DIR = 'data/processed_tensors/'
-EPOCHS = 16
+EPOCHS = 32
 BATCH_SIZE = 128
 
 # set random seed for reproducibility
@@ -38,7 +38,7 @@ if args.eval and args.reset:
     exit(1)
 
 # init model
-model = MLP()
+model = DeepCNN()
 model = model.to(device)
 optimizer = torch.optim.Adam(model.parameters())
 mse = nn.MSELoss()
