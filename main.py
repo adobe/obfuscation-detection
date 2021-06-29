@@ -2,12 +2,15 @@ import argparse
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from models import DeepCNN
+from models import *
 
-MODEL_FILE = 'models/cnn-deep-conv-9-fc-1024-1024.pth'
 DATA_DIR = 'data/processed_tensors/'
 EPOCHS = 32
 BATCH_SIZE = 128
+
+model = ShallowCNN()
+model_file = 'models/cnn-shallow-conv-1-fc-2048-1024.pth'
+cuda_device = 0
 
 # set random seed for reproducibility
 torch.manual_seed(42)
@@ -26,12 +29,27 @@ class ScriptDataset(torch.utils.data.Dataset):
 parser = argparse.ArgumentParser(description='obfuscation detection train file')
 parser.add_argument('--reset', help='start over training', action='store_true')
 parser.add_argument('--eval', help='eval model', action='store_true')
+parser.add_argument('--model', default='cnn', help='model to run (mlp, deep-mlp, cnn, deep-cnn)')
+parser.add_argument('--model_file', default='models/cnn-shallow-conv-1-fc-2048-1024.pth', help='model file to save/load')
+parser.add_argument('--cuda_device', default=0, type=int, help='which cuda device to use')
 args = parser.parse_args()
+
+if args.model == 'mlp':
+    model = MLP()
+elif args.model == 'deep-mlp':
+    model = DeepMLP()
+elif args.model == 'cnn':
+    model = ShallowCNN()
+elif args.model == 'deep-cnn':
+    model = DeepCNN()
+
+model_file = args.model_file
 
 device = torch.device('cpu')
 if torch.cuda.is_available():
-    print('using CUDA')
+    torch.cuda.set_device(args.cuda_device)
     device = torch.device('cuda')
+    print('using CUDA', torch.cuda.current_device())
 
 if args.eval and args.reset:
     print('cannot eval without loading model')
