@@ -5,7 +5,7 @@ from torch.autograd import Variable
 from models import *
 
 DATA_DIR = 'data/processed_tensors/'
-EPOCHS = 32
+EPOCHS = 100
 BATCH_SIZE = 128
 
 model = ShallowCNN()
@@ -71,11 +71,11 @@ print('loaded data:', len(train_data), len(val_data))
 
 if args.eval or not args.reset:
     # load checkpoint if eval or not retraining
-    checkpoint = torch.load(MODEL_FILE)
+    checkpoint = torch.load(model_file)
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     epoch = checkpoint['epoch']
-    print('loaded {:s} on epoch {:d} with val acc {:f}'.format(MODEL_FILE, epoch, checkpoint['val_acc']))
+    print('loaded {:s} on epoch {:d} with val acc {:f}'.format(model_file, epoch, checkpoint['val_acc']))
 
 def eval_model(dataset_name, model, data_loader, num_data, loss_fn):
     model.eval()
@@ -137,4 +137,4 @@ else:
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'val_acc': val_acc
-            }, MODEL_FILE)
+            }, model_file)
