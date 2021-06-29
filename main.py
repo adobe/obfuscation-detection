@@ -35,12 +35,16 @@ parser.add_argument('--cuda_device', default=0, type=int, help='which cuda devic
 args = parser.parse_args()
 
 if args.model == 'mlp':
+    print('using MLP model')
     model = MLP()
 elif args.model == 'deep-mlp':
+    print('using deep MLP model')
     model = DeepMLP()
 elif args.model == 'cnn':
+    print('using CNN model')
     model = ShallowCNN()
 elif args.model == 'deep-cnn':
+    print('using deep CNN model')
     model = DeepCNN()
 
 model_file = 'models/' + args.model_file
@@ -56,7 +60,6 @@ if args.eval and args.reset:
     exit(1)
 
 # init model
-model = DeepCNN()
 model = model.to(device)
 optimizer = torch.optim.Adam(model.parameters())
 mse = nn.MSELoss()
