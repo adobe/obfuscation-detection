@@ -14,7 +14,7 @@ class MLP(nn.Module):
         super(MLP, self).__init__()
         self.fc = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(71680, 1024),
+            nn.Linear(73728, 1024),
             nn.Dropout(p=0.9),
             nn.ReLU(),
             nn.Linear(1024, 512),
@@ -34,7 +34,7 @@ class DeepMLP(nn.Module):
         super(DeepMLP, self).__init__()
         self.fc = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(71680, 4096),
+            nn.Linear(73728, 4096),
             nn.Dropout(p=0.9),
             nn.ReLU(),
             nn.Linear(4096, 2048),
@@ -57,7 +57,7 @@ class ShallowCNN(nn.Module):
     def __init__(self):
         super(ShallowCNN, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(1, 128, kernel_size=(70, 3), stride=1),
+            nn.Conv2d(1, 128, kernel_size=(72, 3), stride=1), # 72 for num of chars
             nn.ReLU(),
             View((-1, 128, 1022)),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3)

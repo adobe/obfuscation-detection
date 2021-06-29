@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 from models import MLP
 
-MODEL_FILE = 'models/mlp-shallow-1024-512.pt'
+MODEL_FILE = 'models/mlp-shallow-1024-512.pth'
 DATA_DIR = 'data/processed_tensors/'
 EPOCHS = 16
 BATCH_SIZE = 128
@@ -57,7 +57,7 @@ if args.eval or not args.reset:
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     epoch = checkpoint['epoch']
-    print('loaded {:s} on epoch {:d} with val loss {:f}'.format(MODEL_FILE, epoch, checkpoint['val_loss']))
+    print('loaded {:s} on epoch {:d} with val acc {:f}'.format(MODEL_FILE, epoch, checkpoint['val_acc']))
 
 def eval_model(dataset_name, model, data_loader, num_data, loss_fn):
     model.eval()
@@ -89,7 +89,7 @@ if args.eval:
     eval_model('val', model, val_loader, len(val_data), mse)
 else:
     # train model
-    best_val_loss = float('inf')
+    best_val_acc = 0.
     for i in range(epoch, EPOCHS):
         print('epoch', i)
 
@@ -108,15 +108,15 @@ else:
 
         # eval model
         eval_model('train', model, train_loader, len(train_data), mse)
-        val_loss, _ = eval_model('val', model, val_loader, len(val_data), mse)
+        _, val_acc = eval_model('val', model, val_loader, len(val_data), mse)
 
-        # save model every epoch if better val loss
-        if val_loss < best_val_loss:
+        # save model every epoch if better val acc
+        if val_acc > best_val_acc:
             print('saving this best checkpoint')
-            best_val_loss = val_loss
+            best_val_acc = val_acc
             torch.save({
                 'epoch': i,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'val_loss': val_loss
+                'val_acc': val_acc
             }, MODEL_FILE)
