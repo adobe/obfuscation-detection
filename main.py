@@ -45,9 +45,9 @@ mse = nn.MSELoss()
 epoch = 0
 
 # load data
-train_data = ScriptDataset(torch.load(DATA_DIR + 'train_data.pt'), device)
+train_data = ScriptDataset(torch.load(DATA_DIR + 'train_data.pth'), device)
 train_loader = torch.utils.data.DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
-val_data = ScriptDataset(torch.load(DATA_DIR + 'val_data.pt'), device)
+val_data = ScriptDataset(torch.load(DATA_DIR + 'val_data.pth'), device)
 val_loader = torch.utils.data.DataLoader(val_data, batch_size=BATCH_SIZE, shuffle=False)
 print('loaded data:', len(train_data), len(val_data))
 
