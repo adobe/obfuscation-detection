@@ -158,11 +158,11 @@ class Conv2(nn.Module):
             nn.Flatten(),
             # fc1
             nn.Linear(28672, 1024),
-            nn.Dropout(p=0.5),
+            nn.Dropout(p=0.8),
             nn.ReLU(),
             # fc2
             nn.Linear(1024, 1024),
-            nn.Dropout(p=0.5),
+            nn.Dropout(p=0.8),
             nn.ReLU(),
             # output
             nn.Linear(1024, 2),
@@ -340,10 +340,25 @@ class Conv5(nn.Module):
 class SimpleLSTM(nn.Module):
     def __init__(self):
         super(SimpleLSTM, self).__init__()
-        self.lstm = nn.Sequential(
-            nn.LSTM()
+        self.lstm = nn.LSTM(72, 256, batch_first=True)
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            # fc1
+            nn.Linear(262144, 256),
+            nn.Dropout(p=0.5),
+            nn.ReLU(),
+            # fc2
+            nn.Linear(256, 256),
+            nn.Dropout(p=0.5),
+            nn.ReLU(),
+            # output
+            nn.Linear(256, 2),
+            nn.Softmax(dim=1),
         )
     
+    # def forward(self, x, hn, cn):
     def forward(self, x):
-
+        # x = self.lstm(x, (hn, cn))
+        x, _ = self.lstm(x)
+        x = self.fc(x)
         return x

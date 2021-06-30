@@ -63,6 +63,9 @@ elif args.model == 'cnn-5':
 elif args.model == 'large-cnn-2':
     print('using Large CNN 2')
     model = LargeCNN2()
+elif args.model == 'lstm-simple':
+    print('using simple LSTM')
+    model = SimpleLSTM()
 
 model_file = 'models/' + args.model_file
 
@@ -138,13 +141,24 @@ if args.eval:
     eval_model('val', model, val_loader, len(val_data), mse)
 else:
     # train model
+    # if args.model.startswith('lstm'):
+    #     hn = torch.zeros(1, BATCH_SIZE, 256) # 256 for hidden size
+    #     cn = torch.zeros(1, BATCH_SIZE, 256)
     for i in range(epoch, EPOCHS):
         print('epoch', i)
         # run training
         model.train()
         for batch_idx, (data, label) in enumerate(train_loader):
             data, label = Variable(data), Variable(label)
-            output = model(data)
+            if args.model.startswith('lstm'):
+                # reshape data for lstm compatibility
+                data_lstm = torch.zeros(BATCH_SIZE, 1024, 72) # 1024 for seq length, 72 for input dim
+                for j in range(BATCH_SIZE):
+                    data_lstm[j] = data[j][0].T
+                # output, (hn, cn) = model(data_lstm, hn, cn)
+                output = model(data_lstm)
+            else:
+                output = model(data)
             loss = mse(output, label)
             optimizer.zero_grad()
             loss.backward()
