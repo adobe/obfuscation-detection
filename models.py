@@ -139,3 +139,177 @@ class DeepCNN(nn.Module):
         x = self.conv(x)
         x = self.fc(x)
         return x
+
+class Conv2(nn.Module):
+    def __init__(self):
+        super(Conv2, self).__init__()
+        self.conv = nn.Sequential(
+            # conv1
+            nn.Conv2d(1, 256, kernel_size=(72, 7), stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1, 3), stride=3),
+            View((-1, 1, 256, 339)),
+            # conv2
+            nn.Conv2d(1, 256, kernel_size=(256,3), stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1,3), stride=3),
+        )
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            # fc1
+            nn.Linear(28672, 1024),
+            nn.Dropout(p=0.5),
+            nn.ReLU(),
+            # fc2
+            nn.Linear(1024, 1024),
+            nn.Dropout(p=0.5),
+            nn.ReLU(),
+            # output
+            nn.Linear(1024, 2),
+            nn.Softmax(dim=1),
+        )
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.fc(x)
+        return x
+
+class Conv3(nn.Module):
+    def __init__(self):
+        super(Conv3, self).__init__()
+        self.conv = nn.Sequential(
+            # conv1
+            nn.Conv2d(1, 256, kernel_size=(72, 7), stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1, 3), stride=3),
+            View((-1, 1, 256, 339)),
+            # conv2
+            nn.Conv2d(1, 256, kernel_size=(256, 3), stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1,3), stride=3),
+            View((-1, 1, 256, 112)),
+            # conv3
+            nn.Conv2d(1, 256, kernel_size=(256,3), stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1,3), stride=3),
+        )
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            # fc1
+            nn.Linear(9216, 1024),
+            nn.Dropout(p=0.5),
+            nn.ReLU(),
+            # fc2
+            nn.Linear(1024, 1024),
+            nn.Dropout(p=0.5),
+            nn.ReLU(),
+            # output
+            nn.Linear(1024, 2),
+            nn.Softmax(dim=1),
+        )
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.fc(x)
+        return x
+
+class Conv4(nn.Module):
+    def __init__(self):
+        super(Conv4, self).__init__()
+        self.conv = nn.Sequential(
+            # conv1
+            nn.Conv2d(1, 256, kernel_size=(72, 7), stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1, 3), stride=3),
+            View((-1, 1, 256, 339)),
+            # conv2
+            nn.Conv2d(1, 256, kernel_size=(256, 3), stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1,3), stride=3),
+            View((-1, 1, 256, 112)),
+            # conv3
+            nn.Conv2d(1, 256, kernel_size=(256, 3), stride=1),
+            nn.ReLU(),
+            View((-1, 1, 256, 110)),
+            # conv4
+            nn.Conv2d(1, 256, kernel_size=(256,3), stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1,3), stride=3),
+        )
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            # fc1
+            nn.Linear(9216, 1024),
+            nn.Dropout(p=0.5),
+            nn.ReLU(),
+            # fc2
+            nn.Linear(1024, 1024),
+            nn.Dropout(p=0.5),
+            nn.ReLU(),
+            # output
+            nn.Linear(1024, 2),
+            nn.Softmax(dim=1),
+        )
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.fc(x)
+        return x
+
+class Conv5(nn.Module):
+    def __init__(self):
+        super(Conv5, self).__init__()
+        self.conv = nn.Sequential(
+            # conv1
+            nn.Conv2d(1, 256, kernel_size=(72, 7), stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1, 3), stride=3),
+            View((-1, 1, 256, 339)),
+            # conv2
+            nn.Conv2d(1, 256, kernel_size=(256, 3), stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1,3), stride=3),
+            View((-1, 1, 256, 112)),
+            # conv3
+            nn.Conv2d(1, 256, kernel_size=(256, 3), stride=1),
+            nn.ReLU(),
+            View((-1, 1, 256, 110)),
+            # conv4
+            nn.Conv2d(1, 256, kernel_size=(256, 3), stride=1),
+            nn.ReLU(),
+            View((-1, 1, 256, 108)),
+            # conv5
+            nn.Conv2d(1, 256, kernel_size=(256,3), stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1,3), stride=3),
+        )
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            # fc1
+            nn.Linear(8960, 1024),
+            nn.Dropout(p=0.5),
+            nn.ReLU(),
+            # fc2
+            nn.Linear(1024, 1024),
+            nn.Dropout(p=0.5),
+            nn.ReLU(),
+            # output
+            nn.Linear(1024, 2),
+            nn.Softmax(dim=1),
+        )
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.fc(x)
+        return x
+
+class SimpleLSTM(nn.Module):
+    def __init__(self):
+        super(SimpleLSTM, self).__init__()
+        self.lstm = nn.Sequential(
+            nn.LSTM()
+        )
+    
+    def forward(self, x):
+
+        return x

@@ -48,6 +48,18 @@ elif args.model == 'cnn':
 elif args.model == 'deep-cnn':
     print('using deep CNN model')
     model = DeepCNN()
+elif args.model == 'cnn-2':
+    print('using CNN 2')
+    model = Conv2()
+elif args.model == 'cnn-3':
+    print('using CNN 3')
+    model = Conv3()
+elif args.model == 'cnn-4':
+    print('using CNN 4')
+    model = Conv4()
+elif args.model == 'cnn-5':
+    print('using CNN 5')
+    model = Conv5()
 
 model_file = 'models/' + args.model_file
 
