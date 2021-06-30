@@ -28,20 +28,20 @@ class ScriptDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         return self.x[index], self.y[index]
 
-class LSTMScriptDataset(torch.utils.data.Dataset):
-    def __init__(self, data, device):
-        x = data['x']
-        x_new = torch.zeros(x.shape[0], x.shape[3], x.shape[2])
-        for i in range(len(x)):
-            x_new[i] = x[i][0].T
-        self.x = x_new.to(device)
-        self.y = data['y'].to(device)
+# class LSTMScriptDataset(torch.utils.data.Dataset):
+#     def __init__(self, data, device):
+#         x = data['x']
+#         x_new = torch.zeros(x.shape[0], x.shape[3], x.shape[2])
+#         for i in range(len(x)):
+#             x_new[i] = x[i][0].T
+#         self.x = x_new.to(device)
+#         self.y = data['y'].to(device)
     
-    def __len__(self):
-        return len(self.y)
+#     def __len__(self):
+#         return len(self.y)
 
-    def __getitem__(self, index):
-        return self.x[index], self.y[index]
+#     def __getitem__(self, index):
+#         return self.x[index], self.y[index]
 
 parser = argparse.ArgumentParser(description='obfuscation detection train file')
 parser.add_argument('--reset', help='start over training', action='store_true')
@@ -108,8 +108,8 @@ epoch = 0
 
 # load data
 if args.model.startswith('lstm'):
-    train_data = LSTMScriptDataset(torch.load(DATA_DIR + 'train_data.pth'), device)
-    val_data = LSTMScriptDataset(torch.load(DATA_DIR + 'val_data.pth'), device)
+    train_data = ScriptDataset(torch.load(DATA_DIR + 'lstm_train_data.pth'), device)
+    val_data = ScriptDataset(torch.load(DATA_DIR + 'lstm_val_data.pth'), device)
 else:
     train_data = ScriptDataset(torch.load(DATA_DIR + 'train_data.pth'), device)
     val_data = ScriptDataset(torch.load(DATA_DIR + 'val_data.pth'), device)

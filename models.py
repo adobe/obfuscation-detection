@@ -344,7 +344,7 @@ class SimpleLSTM(nn.Module):
         self.fc = nn.Sequential(
             nn.Flatten(),
             # fc1
-            nn.Linear(262144, 256),
+            nn.Linear(524288, 256),
             nn.Dropout(p=0.5),
             nn.ReLU(),
             # fc2
