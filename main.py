@@ -60,6 +60,9 @@ elif args.model == 'cnn-4':
 elif args.model == 'cnn-5':
     print('using CNN 5')
     model = Conv5()
+elif args.model == 'large-cnn-2':
+    print('using Large CNN 2')
+    model = LargeCNN2()
 
 model_file = 'models/' + args.model_file
 
