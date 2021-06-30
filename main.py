@@ -28,6 +28,21 @@ class ScriptDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         return self.x[index], self.y[index]
 
+class LSTMScriptDataset(torch.utils.data.Dataset):
+    def __init__(self, data, device):
+        x = data['x']
+        x_new = torch.zeros(x.shape[0], x.shape[3], x.shape[2])
+        for i in range(len(x)):
+            x_new[i] = x[i][0].T
+        self.x = x_new.to(device)
+        self.y = data['y'].to(device)
+    
+    def __len__(self):
+        return len(self.y)
+
+    def __getitem__(self, index):
+        return self.x[index], self.y[index]
+
 parser = argparse.ArgumentParser(description='obfuscation detection train file')
 parser.add_argument('--reset', help='start over training', action='store_true')
 parser.add_argument('--eval', help='eval model', action='store_true')
@@ -86,9 +101,13 @@ mse = nn.MSELoss()
 epoch = 0
 
 # load data
-train_data = ScriptDataset(torch.load(DATA_DIR + 'train_data.pth'), device)
+if args.model.startswith('lstm'):
+    train_data = LSTMScriptDataset(torch.load(DATA_DIR + 'train_data.pth'), device)
+    val_data = LSTMScriptDataset(torch.load(DATA_DIR + 'val_data.pth'), device)
+else:
+    train_data = ScriptDataset(torch.load(DATA_DIR + 'train_data.pth'), device)
+    val_data = ScriptDataset(torch.load(DATA_DIR + 'val_data.pth'), device)
 train_loader = torch.utils.data.DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
-val_data = ScriptDataset(torch.load(DATA_DIR + 'val_data.pth'), device)
 val_loader = torch.utils.data.DataLoader(val_data, batch_size=BATCH_SIZE, shuffle=False)
 print('loaded data:', len(train_data), len(val_data))
 
@@ -112,15 +131,7 @@ def eval_model(dataset_name, model, data_loader, num_data, loss_fn):
     for _, (data, label) in enumerate(data_loader):
         # run model
         data, label = Variable(data), Variable(label)
-        if args.model.startswith('lstm'):
-            # reshape data for lstm compatibility
-            data_lstm = torch.zeros(BATCH_SIZE, 1024, 72).to(device) # 1024 for seq length, 72 for input dim
-            for j in range(BATCH_SIZE):
-                data_lstm[j] = data[j][0].T
-            # output, (hn, cn) = model(data_lstm, hn, cn)
-            output = model(data_lstm)
-        else:
-            output = model(data)
+        output = model(data)
 
         # calculate loss
         loss = loss_fn(output, label)
@@ -158,15 +169,7 @@ else:
         model.train()
         for batch_idx, (data, label) in enumerate(train_loader):
             data, label = Variable(data), Variable(label)
-            if args.model.startswith('lstm'):
-                # reshape data for lstm compatibility
-                data_lstm = torch.zeros(BATCH_SIZE, 1024, 72).to(device) # 1024 for seq length, 72 for input dim
-                for j in range(BATCH_SIZE):
-                    data_lstm[j] = data[j][0].T
-                # output, (hn, cn) = model(data_lstm, hn, cn)
-                output = model(data_lstm)
-            else:
-                output = model(data)
+            output = model(data)
             loss = mse(output, label)
             optimizer.zero_grad()
             loss.backward()
