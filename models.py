@@ -174,6 +174,40 @@ class Conv2(nn.Module):
         x = self.fc(x)
         return x
 
+class LargeCNN2(nn.Module):
+    def __init__(self):
+        super(LargeCNN2, self).__init__()
+        self.conv = nn.Sequential(
+            # conv1
+            nn.Conv2d(1, 1024, kernel_size=(72, 7), stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1, 3), stride=3),
+            View((-1, 1, 1024, 339)),
+            # conv2
+            nn.Conv2d(1, 1024, kernel_size=(1024,3), stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1,3), stride=3),
+        )
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            # fc1
+            nn.Linear(114688, 2048),
+            nn.Dropout(p=0.8),
+            nn.ReLU(),
+            # fc2
+            nn.Linear(2048, 2048),
+            nn.Dropout(p=0.8),
+            nn.ReLU(),
+            # output
+            nn.Linear(2048, 2),
+            nn.Softmax(dim=1),
+        )
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.fc(x)
+        return x
+
 class Conv3(nn.Module):
     def __init__(self):
         super(Conv3, self).__init__()
