@@ -101,8 +101,8 @@ def eval_model(dataset_name, model, data_loader, num_data, loss_fn):
         avg_loss += loss.data
         num_batches += 1
         # calculate accuracy
-        y_pred += list(torch.max(output, dim=1).indices.numpy())
-        y_true += list(torch.max(label, dim=1).indices.numpy())
+        y_pred += list(torch.max(output, dim=1).indices.cpu().numpy())
+        y_true += list(torch.max(label, dim=1).indices.cpu().numpy())
     avg_loss /= num_batches
     acc = accuracy_score(y_true, y_pred)
     f1 = f1_score(y_true, y_pred)
