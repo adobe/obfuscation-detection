@@ -112,7 +112,15 @@ def eval_model(dataset_name, model, data_loader, num_data, loss_fn):
     for _, (data, label) in enumerate(data_loader):
         # run model
         data, label = Variable(data), Variable(label)
-        output = model(data)
+        if args.model.startswith('lstm'):
+            # reshape data for lstm compatibility
+            data_lstm = torch.zeros(BATCH_SIZE, 1024, 72).to(device) # 1024 for seq length, 72 for input dim
+            for j in range(BATCH_SIZE):
+                data_lstm[j] = data[j][0].T
+            # output, (hn, cn) = model(data_lstm, hn, cn)
+            output = model(data_lstm)
+        else:
+            output = model(data)
 
         # calculate loss
         loss = loss_fn(output, label)
@@ -152,7 +160,7 @@ else:
             data, label = Variable(data), Variable(label)
             if args.model.startswith('lstm'):
                 # reshape data for lstm compatibility
-                data_lstm = torch.zeros(BATCH_SIZE, 1024, 72) # 1024 for seq length, 72 for input dim
+                data_lstm = torch.zeros(BATCH_SIZE, 1024, 72).to(device) # 1024 for seq length, 72 for input dim
                 for j in range(BATCH_SIZE):
                     data_lstm[j] = data[j][0].T
                 # output, (hn, cn) = model(data_lstm, hn, cn)
