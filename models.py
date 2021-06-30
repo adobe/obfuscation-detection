@@ -362,3 +362,55 @@ class SimpleLSTM(nn.Module):
         x, _ = self.lstm(x)
         x = self.fc(x)
         return x
+
+class SmallLSTM(nn.Module):
+    def __init__(self):
+        super(SmallLSTM, self).__init__()
+        self.lstm = nn.LSTM(72, 128, batch_first=True)
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            # fc1
+            nn.Linear(131072, 256),
+            nn.Dropout(p=0.5),
+            nn.ReLU(),
+            # fc2
+            nn.Linear(256, 256),
+            nn.Dropout(p=0.5),
+            nn.ReLU(),
+            # output
+            nn.Linear(256, 2),
+            nn.Softmax(dim=1),
+        )
+    
+    # def forward(self, x, hn, cn):
+    def forward(self, x):
+        # x = self.lstm(x, (hn, cn))
+        x, _ = self.lstm(x)
+        x = self.fc(x)
+        return x
+
+class LargeLSTM(nn.Module):
+    def __init__(self):
+        super(LargeLSTM, self).__init__()
+        self.lstm = nn.LSTM(72, 512, batch_first=True)
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            # fc1
+            nn.Linear(524288, 256),
+            nn.Dropout(p=0.5),
+            nn.ReLU(),
+            # fc2
+            nn.Linear(256, 256),
+            nn.Dropout(p=0.5),
+            nn.ReLU(),
+            # output
+            nn.Linear(256, 2),
+            nn.Softmax(dim=1),
+        )
+    
+    # def forward(self, x, hn, cn):
+    def forward(self, x):
+        # x = self.lstm(x, (hn, cn))
+        x, _ = self.lstm(x)
+        x = self.fc(x)
+        return x

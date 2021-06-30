@@ -81,6 +81,12 @@ elif args.model == 'large-cnn-2':
 elif args.model == 'lstm-simple':
     print('using simple LSTM')
     model = SimpleLSTM()
+elif args.model == 'lstm-small':
+    print('using small LSTM')
+    model = SmallLSTM()
+elif args.model == 'lstm-large':
+    print('using large LSTM')
+    model = LargeLSTM()
 
 model_file = 'models/' + args.model_file
 
