@@ -16,6 +16,17 @@ class View(nn.Module):
     def forward(self, x):
         return x.view(*self.shape)
 
+class GatedActivation(nn.Module):
+    def __init__(self):
+        super(GatedActivation, self).__init__()
+        self.tanh = nn.Tanh()
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        t = self.tanh(x[:, :int(x.shape[1]/2)])
+        s = self.tanh(x[:, int(x.shape[1]/2):])
+        return t * s
+
 # best acc: 98.67% train, 84.56% val
 class MLP(nn.Module):
     def __init__(self):
@@ -158,6 +169,40 @@ class Conv2(nn.Module):
             nn.Flatten(),
             # fc1
             nn.Linear(28672, 1024),
+            nn.Dropout(p=0.8),
+            nn.ReLU(),
+            # fc2
+            nn.Linear(1024, 1024),
+            nn.Dropout(p=0.8),
+            nn.ReLU(),
+            # output
+            nn.Linear(1024, 2),
+            nn.Softmax(dim=1),
+        )
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.fc(x)
+        return x
+
+class Conv2Gated(nn.Module):
+    def __init__(self):
+        super(Conv2Gated, self).__init__()
+        self.conv = nn.Sequential(
+            # conv1
+            nn.Conv2d(1, 256, kernel_size=(72, 7), stride=1),
+            GatedActivation(),
+            nn.MaxPool2d(kernel_size=(1, 3), stride=3),
+            View((-1, 1, 128, 339)),
+            # conv2
+            nn.Conv2d(1, 256, kernel_size=(128,3), stride=1),
+            GatedActivation(),
+            nn.MaxPool2d(kernel_size=(1,3), stride=3),
+        )
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            # fc1
+            nn.Linear(14336, 1024),
             nn.Dropout(p=0.8),
             nn.ReLU(),
             # fc2
