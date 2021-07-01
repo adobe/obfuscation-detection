@@ -78,6 +78,9 @@ elif args.model == 'cnn-5':
 elif args.model == 'large-cnn-2':
     print('using Large CNN 2')
     model = LargeCNN2()
+elif args.model == 'cnn-2-gated':
+    print('using Gated CNN 2')
+    model = Conv2Gated()
 elif args.model == 'lstm-simple':
     print('using simple LSTM')
     model = SimpleLSTM()
