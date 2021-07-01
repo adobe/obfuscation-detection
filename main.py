@@ -92,7 +92,7 @@ elif args.model == 'lstm-large':
     print('using large LSTM')
     model = LargeLSTM()
 
-model_file = 'models/' + args.model_file
+model_file = 'models2/' + args.model_file
 
 device = torch.device('cpu')
 if torch.cuda.is_available():
@@ -172,7 +172,7 @@ elif args.analyze:
     # random 100 samples
     data = []
     label = []
-    for i in range(100):
+    for i in range(100, 200):
         x, y = val_data[i]
         data.append(x)
         label.append(y)
@@ -209,19 +209,19 @@ elif args.analyze:
         for i in range(script_tensor.shape[0]):
             if i < script_tensor.shape[0] - 1 and script_tensor_idx[i] == script_tensor_idx[i + 1]:
                 script += int_to_char_dict[int(script_tensor[i])].upper()
-            elif int(script_tensor[i]) != 71:
+            elif int(script_tensor[i]) != 70:
                 script += int_to_char_dict[int(script_tensor[i])]
         ffile.write(script)
 
     for i in range(len(y_pred)):
         # false negatives
         if y_pred[i] == 0 and y_true[i] == 1:
-            fn_file.write('Script {:d}\n'.format(i))
+            fn_file.write('\nScript {:d}\n'.format(i))
             print_command(val_data[i][0], int_to_char_dict, fn_file)
         
         # true positives
         if y_pred[i] == 1 and y_true[i] == 1:
-            tp_file.write('Script {:d}\n'.format(i))
+            tp_file.write('\nScript {:d}\n'.format(i))
             print_command(val_data[i][0], int_to_char_dict, tp_file)
 else:
     # train model

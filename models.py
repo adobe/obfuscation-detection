@@ -33,7 +33,7 @@ class MLP(nn.Module):
         super(MLP, self).__init__()
         self.fc = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(73728, 1024),
+            nn.Linear(72704, 1024),
             nn.Dropout(p=0.9),
             nn.ReLU(),
             nn.Linear(1024, 512),
@@ -53,7 +53,7 @@ class DeepMLP(nn.Module):
         super(DeepMLP, self).__init__()
         self.fc = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(73728, 4096),
+            nn.Linear(72704, 4096),
             nn.Dropout(p=0.9),
             nn.ReLU(),
             nn.Linear(4096, 2048),
@@ -83,11 +83,11 @@ class ShallowCNN(nn.Module):
         )
         self.fc = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(14620, 2048),
-            nn.Dropout(p=0.9),
+            nn.Linear(14620, 1024),
+            nn.Dropout(p=0.8),
             nn.ReLU(),
-            nn.Linear(2048, 1024),
-            nn.Dropout(p=0.9),
+            nn.Linear(1024, 1024),
+            nn.Dropout(p=0.8),
             nn.ReLU(),
             nn.Linear(1024, 2),
             nn.Softmax(dim=1)
@@ -156,19 +156,19 @@ class Conv2(nn.Module):
         super(Conv2, self).__init__()
         self.conv = nn.Sequential(
             # conv1
-            nn.Conv2d(1, 256, kernel_size=(71, 7), stride=1),
+            nn.Conv2d(1, 128, kernel_size=(71, 7), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
-            View((-1, 1, 256, 339)),
+            View((-1, 1, 128, 339)),
             # conv2
-            nn.Conv2d(1, 256, kernel_size=(256,3), stride=1),
+            nn.Conv2d(1, 128, kernel_size=(128,3), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1,3), stride=3),
         )
         self.fc = nn.Sequential(
             nn.Flatten(),
             # fc1
-            nn.Linear(28672, 1024),
+            nn.Linear(14336, 1024),
             nn.Dropout(p=0.8),
             nn.ReLU(),
             # fc2
@@ -258,29 +258,28 @@ class Conv3(nn.Module):
         super(Conv3, self).__init__()
         self.conv = nn.Sequential(
             # conv1
-            nn.Conv2d(1, 256, kernel_size=(71, 7), stride=1),
+            nn.Conv2d(1, 128, kernel_size=(71, 7), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
-            View((-1, 1, 256, 339)),
+            View((-1, 1, 128, 339)),
             # conv2
-            nn.Conv2d(1, 256, kernel_size=(256, 3), stride=1),
+            nn.Conv2d(1, 128, kernel_size=(128, 3), stride=1),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(1,3), stride=3),
-            View((-1, 1, 256, 112)),
+            View((-1, 1, 128, 337)),
             # conv3
-            nn.Conv2d(1, 256, kernel_size=(256,3), stride=1),
+            nn.Conv2d(1, 128, kernel_size=(128,3), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1,3), stride=3),
         )
         self.fc = nn.Sequential(
             nn.Flatten(),
             # fc1
-            nn.Linear(9216, 1024),
-            nn.Dropout(p=0.5),
+            nn.Linear(14208, 1024),
+            nn.Dropout(p=0.8),
             nn.ReLU(),
             # fc2
             nn.Linear(1024, 1024),
-            nn.Dropout(p=0.5),
+            nn.Dropout(p=0.8),
             nn.ReLU(),
             # output
             nn.Linear(1024, 2),
