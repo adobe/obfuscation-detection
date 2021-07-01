@@ -46,6 +46,7 @@ class ScriptDataset(torch.utils.data.Dataset):
 parser = argparse.ArgumentParser(description='obfuscation detection train file')
 parser.add_argument('--reset', help='start over training', action='store_true')
 parser.add_argument('--eval', help='eval model', action='store_true')
+parser.add_argument('--analyze', help='analyze statistics and samples of model', action='store_true')
 parser.add_argument('--model', default='cnn', help='model to run (mlp, deep-mlp, cnn, deep-cnn)')
 parser.add_argument('--model_file', default='cnn-shallow-conv-1-fc-2048-1024.pth', help='model file to save/load')
 parser.add_argument('--cuda_device', default=0, type=int, help='which cuda device to use')
@@ -167,6 +168,61 @@ if args.eval:
     # eval model
     eval_model('train', model, train_loader, len(train_data), mse)
     eval_model('val', model, val_loader, len(val_data), mse)
+elif args.analyze:
+    # random 100 samples
+    data = []
+    label = []
+    for i in range(100):
+        x, y = val_data[i]
+        data.append(x)
+        label.append(y)
+    data = Variable(torch.stack(data))
+    label = Variable(torch.stack(label))
+    output = model(data)
+    y_pred = list(torch.max(output, dim=1).indices.cpu().numpy())
+    y_true = list(torch.max(label, dim=1).indices.cpu().numpy())
+
+    acc = accuracy_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred)
+    prec = precision_score(y_true, y_pred)
+    recall = recall_score(y_true, y_pred)
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+
+    print('\taccuracy: {:f}'.format(acc))
+    print('\tf1: {:f}'.format(f1))
+    print('\tprecision: {:f}'.format(prec))
+    print('\trecall: {:f}'.format(recall))
+    print('\tconfusion matrix (tn, fp, fn, tp): {:d}, {:d}, {:d}, {:d}'.format(tn, fp, fn, tp))
+
+    char_dict = torch.load('char_dict.pth')
+    int_to_char_dict = {}
+    for char in char_dict:
+        int_to_char_dict[char_dict[char]] = char
+    print(int_to_char_dict)
+    fn_file = open('fn.txt', 'w')
+    tp_file = open('tp.txt', 'w')
+
+    def print_command(script_tensor, int_to_char_dict, ffile):
+        script = ''
+        script_tensor = script_tensor[0].T
+        script_tensor_idx, script_tensor = torch.nonzero(script_tensor, as_tuple=True)
+        for i in range(script_tensor.shape[0]):
+            if i < script_tensor.shape[0] - 1 and script_tensor_idx[i] == script_tensor_idx[i + 1]:
+                script += int_to_char_dict[int(script_tensor[i])].upper()
+            elif int(script_tensor[i]) != 71:
+                script += int_to_char_dict[int(script_tensor[i])]
+        ffile.write(script)
+
+    for i in range(len(y_pred)):
+        # false negatives
+        if y_pred[i] == 0 and y_true[i] == 1:
+            fn_file.write('Script {:d}\n'.format(i))
+            print_command(val_data[i][0], int_to_char_dict, fn_file)
+        
+        # true positives
+        if y_pred[i] == 1 and y_true[i] == 1:
+            tp_file.write('Script {:d}\n'.format(i))
+            print_command(val_data[i][0], int_to_char_dict, tp_file)
 else:
     # train model
     # if args.model.startswith('lstm'):

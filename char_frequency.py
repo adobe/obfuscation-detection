@@ -33,13 +33,18 @@ for label_file in LABEL_FILES:
             ps_file = open(DATA_DIR + ps_path, 'rb')
             byte = ps_file.read(1)
             while byte:
+                if byte == b'\x00':
+                    # skip this null byte
+                    byte = ps_file.read(1)
+                    continue
                 try:
                     byte_str = str(byte, 'utf-8')
                     # if upper, add to count for lower char
                     if byte_str.isalpha() and byte_str.isupper():
                         byte = byte_str.lower().encode('utf-8')
                 except:
-                    pass
+                    byte = ps_file.read(1)
+                    continue
                 if byte not in char_counts:
                     char_counts[byte] = 0
                 char_counts[byte] += 1

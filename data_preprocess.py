@@ -16,7 +16,7 @@ LABEL_FILES = [
     # 'UnderhandedPowerShell-obfuscation-labeledData.csv'
 ]
 PROCESSED_TENSORS_DIR = 'data/processed_tensors/'
-FREQ_CUTOFF = 0.0002 # found from char_frequency.py
+FREQ_CUTOFF = 0.0003 # found from char_frequency.py
 TENSOR_LENGTH = 1024
 
 char_freq_file = open('char_freq.txt', 'r')
@@ -101,7 +101,7 @@ print('unparseable files: {:d}'.format(unparseable))
 print(num_pos, num_neg)
 print(converted_tensors[0].shape)
 print(converted_tensors[0][24][0])
-print(converted_tensors[0][71][0])
+print(converted_tensors[0][70][0])
 print(tensor_labels[0])
 print(len(converted_tensors))
 print(len(tensor_labels))

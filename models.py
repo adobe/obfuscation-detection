@@ -24,7 +24,7 @@ class GatedActivation(nn.Module):
 
     def forward(self, x):
         t = self.tanh(x[:, :int(x.shape[1]/2)])
-        s = self.tanh(x[:, int(x.shape[1]/2):])
+        s = self.sigmoid(x[:, int(x.shape[1]/2):])
         return t * s
 
 # best acc: 98.67% train, 84.56% val
@@ -76,7 +76,7 @@ class ShallowCNN(nn.Module):
     def __init__(self):
         super(ShallowCNN, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(1, 128, kernel_size=(72, 3), stride=1), # 72 for num of chars
+            nn.Conv2d(1, 128, kernel_size=(71, 3), stride=1), # 71 for num of chars
             nn.ReLU(),
             View((-1, 128, 1022)),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3)
@@ -105,7 +105,7 @@ class DeepCNN(nn.Module):
         super(DeepCNN, self).__init__()
         self.conv = nn.Sequential(
             # conv1
-            nn.Conv2d(1, 256, kernel_size=(72, 7), stride=1),
+            nn.Conv2d(1, 256, kernel_size=(71, 7), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
             View((-1, 1, 256, 339)),
@@ -156,7 +156,7 @@ class Conv2(nn.Module):
         super(Conv2, self).__init__()
         self.conv = nn.Sequential(
             # conv1
-            nn.Conv2d(1, 256, kernel_size=(72, 7), stride=1),
+            nn.Conv2d(1, 256, kernel_size=(71, 7), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
             View((-1, 1, 256, 339)),
@@ -190,7 +190,7 @@ class Conv2Gated(nn.Module):
         super(Conv2Gated, self).__init__()
         self.conv = nn.Sequential(
             # conv1
-            nn.Conv2d(1, 256, kernel_size=(72, 7), stride=1),
+            nn.Conv2d(1, 256, kernel_size=(71, 7), stride=1),
             GatedActivation(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
             View((-1, 1, 128, 339)),
@@ -224,7 +224,7 @@ class LargeCNN2(nn.Module):
         super(LargeCNN2, self).__init__()
         self.conv = nn.Sequential(
             # conv1
-            nn.Conv2d(1, 1024, kernel_size=(72, 7), stride=1),
+            nn.Conv2d(1, 1024, kernel_size=(71, 7), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
             View((-1, 1, 1024, 339)),
@@ -258,7 +258,7 @@ class Conv3(nn.Module):
         super(Conv3, self).__init__()
         self.conv = nn.Sequential(
             # conv1
-            nn.Conv2d(1, 256, kernel_size=(72, 7), stride=1),
+            nn.Conv2d(1, 256, kernel_size=(71, 7), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
             View((-1, 1, 256, 339)),
@@ -297,7 +297,7 @@ class Conv4(nn.Module):
         super(Conv4, self).__init__()
         self.conv = nn.Sequential(
             # conv1
-            nn.Conv2d(1, 256, kernel_size=(72, 7), stride=1),
+            nn.Conv2d(1, 256, kernel_size=(71, 7), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
             View((-1, 1, 256, 339)),
@@ -340,7 +340,7 @@ class Conv5(nn.Module):
         super(Conv5, self).__init__()
         self.conv = nn.Sequential(
             # conv1
-            nn.Conv2d(1, 256, kernel_size=(72, 7), stride=1),
+            nn.Conv2d(1, 256, kernel_size=(71, 7), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
             View((-1, 1, 256, 339)),
@@ -385,7 +385,7 @@ class Conv5(nn.Module):
 class SimpleLSTM(nn.Module):
     def __init__(self):
         super(SimpleLSTM, self).__init__()
-        self.lstm = nn.LSTM(72, 256, batch_first=True)
+        self.lstm = nn.LSTM(71, 256, batch_first=True)
         self.fc = nn.Sequential(
             nn.Flatten(),
             # fc1
@@ -411,7 +411,7 @@ class SimpleLSTM(nn.Module):
 class SmallLSTM(nn.Module):
     def __init__(self):
         super(SmallLSTM, self).__init__()
-        self.lstm = nn.LSTM(72, 128, batch_first=True)
+        self.lstm = nn.LSTM(71, 128, batch_first=True)
         self.fc = nn.Sequential(
             nn.Flatten(),
             # fc1
@@ -437,7 +437,7 @@ class SmallLSTM(nn.Module):
 class LargeLSTM(nn.Module):
     def __init__(self):
         super(LargeLSTM, self).__init__()
-        self.lstm = nn.LSTM(72, 512, batch_first=True)
+        self.lstm = nn.LSTM(71, 512, batch_first=True)
         self.fc = nn.Sequential(
             nn.Flatten(),
             # fc1
