@@ -147,15 +147,20 @@ class DeepCNN(nn.Module):
             nn.Conv2d(1, 128, kernel_size=(128, 3), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
+            View((-1, 1, 128, 11)),
+            # conv5
+            nn.Conv2d(1, 128, kernel_size=(128, 3), stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1, 3), stride=3),
         )
         self.fc = nn.Sequential(
             nn.Flatten(),
             # fc1
-            nn.Linear(1408, 256),
+            nn.Linear(384, 128),
             nn.Dropout(p=0.5),
             nn.ReLU(),
             # output
-            nn.Linear(256, 2),
+            nn.Linear(128, 2),
             nn.Softmax(dim=1),
         )
 
