@@ -78,7 +78,31 @@ class ShallowCNN(nn.Module):
         self.conv = nn.Sequential(
             nn.Conv2d(1, 128, kernel_size=(71, 3), stride=1), # 71 for num of chars
             nn.ReLU(),
-            View((-1, 128, 1022)),
+            nn.MaxPool2d(kernel_size=(1, 3), stride=3)
+        )
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(14620, 1024),
+            nn.Dropout(p=0.8),
+            nn.ReLU(),
+            nn.Linear(1024, 1024),
+            nn.Dropout(p=0.8),
+            nn.ReLU(),
+            nn.Linear(1024, 2),
+            nn.Softmax(dim=1)
+        )
+    
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.fc(x)
+        return x
+
+class GatedCNN(nn.Module):
+    def __init__(self):
+        super(GatedCNN, self).__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(1, 128, kernel_size=(71, 3), stride=1), # 71 for num of chars
+            GatedActivation(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3)
         )
         self.fc = nn.Sequential(
