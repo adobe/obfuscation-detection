@@ -129,44 +129,33 @@ class DeepCNN(nn.Module):
         super(DeepCNN, self).__init__()
         self.conv = nn.Sequential(
             # conv1
-            nn.Conv2d(1, 256, kernel_size=(71, 7), stride=1),
+            nn.Conv2d(1, 128, kernel_size=(71, 7), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
-            View((-1, 1, 256, 339)),
+            View((-1, 1, 128, 339)),
             # conv2
-            nn.Conv2d(1, 256, kernel_size=(256, 7), stride=1),
+            nn.Conv2d(1, 128, kernel_size=(128, 7), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
-            View((-1, 1, 256, 111)),
+            View((-1, 1, 128, 111)),
             # conv3
-            nn.Conv2d(1, 256, kernel_size=(256, 3), stride=1),
+            nn.Conv2d(1, 128, kernel_size=(128, 3), stride=1),
             nn.ReLU(),
-            View((-1, 1, 256, 109)),
+            nn.MaxPool2d(kernel_size=(1, 3), stride=3),
+            View((-1, 1, 128, 36)),
             # conv4
-            nn.Conv2d(1, 256, kernel_size=(256, 3), stride=1),
+            nn.Conv2d(1, 128, kernel_size=(128, 3), stride=1),
             nn.ReLU(),
-            View((-1, 1, 256, 107)),
-            # conv5
-            nn.Conv2d(1, 256, kernel_size=(256, 3), stride=1),
-            nn.ReLU(),
-            View((-1, 1, 256, 105)),
-            # conv6
-            nn.Conv2d(1, 256, kernel_size=(256,3), stride=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(1,3), stride=3),
+            nn.MaxPool2d(kernel_size=(1, 3), stride=3),
         )
         self.fc = nn.Sequential(
             nn.Flatten(),
             # fc1
-            nn.Linear(8704, 1024),
-            nn.Dropout(p=0.5),
-            nn.ReLU(),
-            # fc2
-            nn.Linear(1024, 1024),
+            nn.Linear(1408, 256),
             nn.Dropout(p=0.5),
             nn.ReLU(),
             # output
-            nn.Linear(1024, 2),
+            nn.Linear(256, 2),
             nn.Softmax(dim=1),
         )
 
