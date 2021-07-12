@@ -129,38 +129,34 @@ class DeepCNN(nn.Module):
         super(DeepCNN, self).__init__()
         self.conv = nn.Sequential(
             # conv1
-            nn.Conv2d(1, 128, kernel_size=(71, 7), stride=1),
+            nn.Conv2d(1, 16, kernel_size=(71, 7), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
-            View((-1, 1, 128, 339)),
+            View((-1, 1, 16, 339)),
             # conv2
-            nn.Conv2d(1, 128, kernel_size=(128, 7), stride=1),
+            nn.Conv2d(1, 16, kernel_size=(16, 7), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
-            View((-1, 1, 128, 111)),
+            View((-1, 1, 16, 111)),
             # conv3
-            nn.Conv2d(1, 128, kernel_size=(128, 3), stride=1),
+            nn.Conv2d(1, 16, kernel_size=(16, 3), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
-            View((-1, 1, 128, 36)),
+            View((-1, 1, 16, 36)),
             # conv4
-            nn.Conv2d(1, 128, kernel_size=(128, 3), stride=1),
+            nn.Conv2d(1, 16, kernel_size=(16, 3), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
-            View((-1, 1, 128, 11)),
+            View((-1, 1, 16, 11)),
             # conv5
-            nn.Conv2d(1, 128, kernel_size=(128, 3), stride=1),
+            nn.Conv2d(1, 16, kernel_size=(16, 3), stride=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 3), stride=3),
         )
         self.fc = nn.Sequential(
             nn.Flatten(),
-            # fc1
-            nn.Linear(384, 128),
-            nn.Dropout(p=0.5),
-            nn.ReLU(),
             # output
-            nn.Linear(128, 2),
+            nn.Linear(48, 2),
             nn.Softmax(dim=1),
         )
 
