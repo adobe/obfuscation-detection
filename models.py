@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 class Shape(nn.Module):
@@ -16,6 +17,9 @@ class View(nn.Module):
     def forward(self, x):
         return x.view(*self.shape)
 
+###
+# start ResNet classes
+
 class GatedActivation(nn.Module):
     def __init__(self):
         super(GatedActivation, self).__init__()
@@ -26,6 +30,77 @@ class GatedActivation(nn.Module):
         t = self.tanh(x[:, :int(x.shape[1]/2)])
         s = self.sigmoid(x[:, int(x.shape[1]/2):])
         return t * s
+
+class LinearNorm(nn.Module):
+    def __init__(self, in_dim, out_dim):
+        super(LinearNorm, self).__init__()
+        self.flatten = nn.Flatten()
+        self.linear_layer = nn.Linear(in_dim, out_dim)
+        nn.init.xavier_normal_(
+            self.linear_layer.weight,
+            gain=nn.init.calculate_gain('linear'))
+    
+    def forward(self, x):
+        x = self.flatten(x) # flatten b/c it's too large for fc right now?
+        return self.linear_layer(x)
+
+class ConvNorm(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size=5, stride=1, padding=2, dilation=1):
+        super(ConvNorm, self).__init__()
+        self.conv = nn.Conv1d(in_channels, out_channels, kernel_size,
+                                stride=stride, padding=padding, dilation=dilation)
+        nn.init.xavier_normal_(
+            self.conv.weight,
+            gain=nn.init.calculate_gain('tanh'))
+
+    def forward(self, x):
+        return self.conv(x)
+
+class ResNet(nn.Module):
+    def __init__(self):
+        super(ResNet, self).__init__()
+        NUM_LAYERS = 3
+        NUM_FILTERS = 512
+        input_size = 1024
+        convolutions_char = []
+        self.num_filters = NUM_FILTERS
+        for _ in range(NUM_LAYERS):
+            conv_layer = nn.Sequential(
+                ConvNorm(input_size, NUM_FILTERS,
+                            kernel_size=5, stride=1,
+                            padding=2, dilation=1),
+                nn.BatchNorm1d(NUM_FILTERS)
+            )
+            convolutions_char.append(conv_layer)
+            input_size = NUM_FILTERS // 2
+        self.convolutions_char = nn.ModuleList(convolutions_char)
+        # self.pre_out = LinearNorm(NUM_FILTERS // 2, 2)
+        self.pre_out = LinearNorm(18176, 2)
+    
+    def forward(self, x):
+        half = self.num_filters // 2
+        res = None
+        skip = None
+        for i in range(len(self.convolutions_char)):
+            conv = self.convolutions_char[i]
+            drop = True
+            if i >= len(self.convolutions_char) - 1:
+                drop = False
+            if skip is not None:
+                x = x + skip
+            conv_out = conv(x)
+            tmp = torch.tanh(conv_out[:, :half, :]) * torch.sigmoid(conv_out[:, half:, :])
+            if res is None:
+                res = tmp
+            else:
+                res = res + tmp
+            skip = tmp
+            x = torch.dropout(tmp, 0.1, drop)
+        x = x + res
+        return torch.softmax(self.pre_out(x), dim=1)
+
+# end ResNet classes
+###
 
 # best acc: 98.67% train, 84.56% val
 class MLP(nn.Module):
