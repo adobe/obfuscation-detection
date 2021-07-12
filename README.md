@@ -9,4 +9,4 @@
 
 4. Run `python --model cnn --model_file best-cnn1-128-fc-1024-1024-dropout-80.pth --run`
 - 1 is obfuscated, 0 is non-obfuscated
-- As of now, it will only run one script at a time.
+- As of now, it will run the model over all the scripts in the `test-scripts` directory
