@@ -6,4 +6,5 @@
 2. Install the dependencies needed. I used Anaconda with Python 3.8.10.
 
 3. Run `python --model cnn --model_file best-cnn1-128-fc-1024-1024-dropout-80.pth --run <SCRIPT_PATH>`
+- 1 is obfuscated, 0 is non-obfuscated
 - As of now, it will only run one script at a time.
