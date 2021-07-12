@@ -28,21 +28,6 @@ class ScriptDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         return self.x[index], self.y[index]
 
-# class LSTMScriptDataset(torch.utils.data.Dataset):
-#     def __init__(self, data, device):
-#         x = data['x']
-#         x_new = torch.zeros(x.shape[0], x.shape[3], x.shape[2])
-#         for i in range(len(x)):
-#             x_new[i] = x[i][0].T
-#         self.x = x_new.to(device)
-#         self.y = data['y'].to(device)
-    
-#     def __len__(self):
-#         return len(self.y)
-
-#     def __getitem__(self, index):
-#         return self.x[index], self.y[index]
-
 parser = argparse.ArgumentParser(description='obfuscation detection train file')
 parser.add_argument('--reset', help='start over training', action='store_true')
 parser.add_argument('--eval', help='eval model', action='store_true')
@@ -94,6 +79,9 @@ elif args.model == 'lstm-small':
 elif args.model == 'lstm-large':
     print('using large LSTM')
     model = LargeLSTM()
+elif args.model == 'resnet':
+    print('using resnet')
+    model = ResNet()
 
 model_file = 'models2/' + args.model_file
 
@@ -114,7 +102,7 @@ mse = nn.MSELoss()
 epoch = 0
 
 # load data
-if args.model.startswith('lstm'):
+if args.model.startswith('lstm') or args.model.startswith('resnet'):
     train_data = ScriptDataset(torch.load(DATA_DIR + 'lstm_train_data.pth'), device)
     val_data = ScriptDataset(torch.load(DATA_DIR + 'lstm_val_data.pth'), device)
 else:

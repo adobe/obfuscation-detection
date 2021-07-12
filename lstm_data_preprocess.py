@@ -86,6 +86,7 @@ for label_file in LABEL_FILES:
                 tensor_labels.append(torch.Tensor([1, 0]))
             ps_file.close()
         except Exception as e:
+            unparseable += 1
             traceback.print_exc()
             print(e)
 
@@ -100,8 +101,8 @@ for label_file in LABEL_FILES:
 print('unparseable files: {:d}'.format(unparseable))
 print(num_pos, num_neg)
 print(converted_tensors[0].shape)
-print(converted_tensors[0][0][24])
-print(converted_tensors[0][0][71])
+print(converted_tensors[0][0][23])
+print(converted_tensors[0][0][70])
 print(tensor_labels[0])
 print(len(converted_tensors))
 print(len(tensor_labels))
