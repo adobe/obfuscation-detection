@@ -33,7 +33,7 @@ parser = argparse.ArgumentParser(description='obfuscation detection train file')
 parser.add_argument('--reset', help='start over training', action='store_true')
 parser.add_argument('--eval', help='eval model', action='store_true')
 parser.add_argument('--analyze', help='analyze statistics and samples of model', action='store_true')
-parser.add_argument('--run', help='run model on a real script')
+parser.add_argument('--run', help='run model on a real script', action='store_true')
 parser.add_argument('--model', default='cnn', help='model to run (mlp, deep-mlp, cnn, deep-cnn)')
 parser.add_argument('--model_file', default='cnn-shallow-conv-1-fc-2048-1024.pth', help='model file to save/load')
 parser.add_argument('--cuda_device', default=0, type=int, help='which cuda device to use')
@@ -217,36 +217,38 @@ elif args.analyze:
             tp_file.write('\nScript {:d}\n'.format(i))
             print_command(val_data[i][0], int_to_char_dict, tp_file)
 elif args.run:
-    TENSOR_LENGTH = 1024
-    char_dict = torch.load('char_dict.pth')
-    try:
-        ps_path = args.run
-        ps_file = open(ps_path, 'rb')
-        ps_tensor = torch.zeros(len(char_dict) + 1, TENSOR_LENGTH) # + 1 for case bit
-        tensor_len = min(os.path.getsize(ps_path), TENSOR_LENGTH)
+    TEST_DIR = 'test-scripts/'
+    for ffile in os.listdir(TEST_DIR):
+        TENSOR_LENGTH = 1024
+        char_dict = torch.load('char_dict.pth')
+        try:
+            ps_path = ffile
+            ps_file = open(TEST_DIR + ps_path, 'rb')
+            ps_tensor = torch.zeros(len(char_dict) + 1, TENSOR_LENGTH) # + 1 for case bit
+            tensor_len = min(os.path.getsize(TEST_DIR + ps_path), TENSOR_LENGTH)
 
-        for i in range(tensor_len):
-            byte = ps_file.read(1)
-            try:
-                byte_char = byte.decode('utf-8')
-            except:
-                continue # invalid char
-            # check for uppercase
-            lower_char = byte_char.lower()
-            if byte_char.isupper() and lower_char in char_dict:
-                ps_tensor[len(char_dict)][i] = 1
-                byte_char = lower_char
-            # check if byte is most frequent
-            if byte_char in char_dict:
-                ps_tensor[char_dict[byte_char]][i] = 1
-        ps_file.close()
-        # run input through model
-        ps_tensor = ps_tensor.view(1, 1, ps_tensor.shape[0], ps_tensor.shape[1])
-        output = model(ps_tensor)
-        # 1 is positive obfuscated, 0 is negative non-obfuscated
-        print('output:', int(torch.argmax(output[0])))
-    except Exception as e:
-        print(e)
+            for i in range(tensor_len):
+                byte = ps_file.read(1)
+                try:
+                    byte_char = byte.decode('utf-8')
+                except:
+                    continue # invalid char
+                # check for uppercase
+                lower_char = byte_char.lower()
+                if byte_char.isupper() and lower_char in char_dict:
+                    ps_tensor[len(char_dict)][i] = 1
+                    byte_char = lower_char
+                # check if byte is most frequent
+                if byte_char in char_dict:
+                    ps_tensor[char_dict[byte_char]][i] = 1
+            ps_file.close()
+            # run input through model
+            ps_tensor = ps_tensor.view(1, 1, ps_tensor.shape[0], ps_tensor.shape[1])
+            output = model(ps_tensor)
+            # 1 is positive obfuscated, 0 is negative non-obfuscated
+            print(ffile + ' output:', int(torch.argmax(output[0])))
+        except Exception as e:
+            print(e)
 else:
     # train model
     for i in range(epoch, EPOCHS):
