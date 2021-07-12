@@ -75,7 +75,6 @@ class ResNet(nn.Module):
             input_size = NUM_FILTERS // 2
         self.convolutions_char = nn.ModuleList(convolutions_char)
         self.pre_out = LinearNorm(NUM_FILTERS // 2, 2)
-        # self.pre_out = LinearNorm(18176, 2)
     
     def forward(self, x):
         half = self.num_filters // 2
@@ -154,11 +153,11 @@ class ShallowCNN(nn.Module):
         self.conv = nn.Sequential(
             nn.Conv2d(1, 128, kernel_size=(71, 3), stride=1), # 71 for num of chars
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(1, 3), stride=3)
+            nn.MaxPool2d(kernel_size=(1, 3), stride=3),
         )
         self.fc = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(14620, 1024),
+            nn.Linear(43520, 1024),
             nn.Dropout(p=0.8),
             nn.ReLU(),
             nn.Linear(1024, 1024),
