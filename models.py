@@ -74,8 +74,8 @@ class ResNet(nn.Module):
             convolutions_char.append(conv_layer)
             input_size = NUM_FILTERS // 2
         self.convolutions_char = nn.ModuleList(convolutions_char)
-        # self.pre_out = LinearNorm(NUM_FILTERS // 2, 2)
-        self.pre_out = LinearNorm(18176, 2)
+        self.pre_out = LinearNorm(NUM_FILTERS // 2, 2)
+        # self.pre_out = LinearNorm(18176, 2)
     
     def forward(self, x):
         half = self.num_filters // 2
@@ -97,7 +97,8 @@ class ResNet(nn.Module):
             skip = tmp
             x = torch.dropout(tmp, 0.1, drop)
         x = x + res
-        return torch.softmax(self.pre_out(x), dim=1)
+        pre = torch.sum(x, dim=2, dtype=torch.float)
+        return torch.softmax(self.pre_out(pre), dim=1)
 
 # end ResNet classes
 ###
