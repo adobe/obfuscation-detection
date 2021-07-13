@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 class Shape(nn.Module):
     def __init__(self):
         super(Shape, self).__init__()
@@ -61,7 +62,7 @@ class ResNet(nn.Module):
         super(ResNet, self).__init__()
         NUM_LAYERS = 3
         NUM_FILTERS = 512
-        input_size = 1024
+        input_size = 71
         convolutions_char = []
         self.num_filters = NUM_FILTERS
         for _ in range(NUM_LAYERS):
@@ -77,6 +78,7 @@ class ResNet(nn.Module):
         self.pre_out = LinearNorm(NUM_FILTERS // 2, 2)
     
     def forward(self, x):
+        x = x.permute(0, 2, 1)
         half = self.num_filters // 2
         res = None
         skip = None
@@ -96,7 +98,9 @@ class ResNet(nn.Module):
             skip = tmp
             x = torch.dropout(tmp, 0.1, drop)
         x = x + res
-        pre = torch.sum(x, dim=2, dtype=torch.float)
+        x = x.permute(0, 2, 1)
+        pre = torch.sum(x, dim=1, dtype=torch.float)
+        pre /= 1024
         return torch.softmax(self.pre_out(pre), dim=1)
 
 # end ResNet classes
