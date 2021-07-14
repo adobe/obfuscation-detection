@@ -201,7 +201,8 @@ elif args.analyze:
 
     def print_command(script_tensor, int_to_char_dict, ffile):
         script = ''
-        script_tensor = script_tensor[0].T
+        if not (args.model.startswith('lstm') or args.model.startswith('resnet')):
+            script_tensor = script_tensor[0].T
         script_tensor_idx, script_tensor = torch.nonzero(script_tensor, as_tuple=True)
         for i in range(script_tensor.shape[0]):
             if i < script_tensor.shape[0] - 1 and script_tensor_idx[i] == script_tensor_idx[i + 1]:
