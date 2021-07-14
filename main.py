@@ -9,7 +9,7 @@ from models import *
 
 DATA_DIR = 'data/processed_tensors/'
 EPOCHS = 100
-BATCH_SIZE = 128
+BATCH_SIZE = 8
 
 model = ShallowCNN()
 model_file = 'models/cnn-shallow-conv-1-fc-2048-1024.pth'
@@ -270,7 +270,7 @@ else:
             loss.backward()
             optimizer.step()
 
-            if batch_idx % 20 == 0:
+            if batch_idx % 200 == 0:
                 print('\t\tbatch {:d}: {:f}'.format(batch_idx, loss.data))
 
         # eval model
