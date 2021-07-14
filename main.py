@@ -162,7 +162,26 @@ if args.eval:
     eval_model('train', model, train_loader, len(train_data), mse)
     eval_model('val', model, val_loader, len(val_data), mse)
 elif args.analyze:
+    def print_command(script_tensor, int_to_char_dict, ffile):
+        script = ''
+        if not (args.model.startswith('lstm') or args.model.startswith('resnet')):
+            script_tensor = script_tensor[0].T
+        script_tensor_idx, script_tensor = torch.nonzero(script_tensor, as_tuple=True)
+        for i in range(script_tensor.shape[0]):
+            if i < script_tensor.shape[0] - 1 and script_tensor_idx[i] == script_tensor_idx[i + 1]:
+                script += int_to_char_dict[int(script_tensor[i])].upper()
+            elif int(script_tensor[i]) != 70:
+                script += int_to_char_dict[int(script_tensor[i])]
+        ffile.write(script)
+
     val_filenames = torch.load('val_filenames_list.pth')
+    char_dict = torch.load('char_dict.pth')
+    int_to_char_dict = {}
+    for char in char_dict:
+        int_to_char_dict[char_dict[char]] = char
+    print(int_to_char_dict)
+    fn_file = open('fn.txt', 'w')
+    fp_file = open('fp.txt', 'w')
 
     # analyze on all val samples
     y_true = []
@@ -170,8 +189,25 @@ elif args.analyze:
     for i, (data, label) in enumerate(val_loader):
         data, label = Variable(data), Variable(label)
         output = model(data)
-        y_pred += list(torch.max(output, dim=1).indices.cpu().numpy())
-        y_true += list(torch.max(label, dim=1).indices.cpu().numpy())
+
+        curr_y_pred = list(torch.max(output, dim=1).indices.cpu().numpy())
+        curr_y_true = list(torch.max(label, dim=1).indices.cpu().numpy())
+        for j in range(len(curr_y_pred)):
+            curr_idx = i * BATCH_SIZE + j
+            # false negatives
+            if curr_y_pred[j] == 0 and curr_y_true[j] == 1:
+                fn_file.write('\n{:s}\n'.format(val_filenames[curr_idx]))
+                fn_file.write('Script {:d}\n'.format(curr_idx))
+                print_command(data[j], int_to_char_dict, fn_file)
+            
+            # false positives
+            if curr_y_pred[j] == 1 and curr_y_true[j] == 0:
+                fp_file.write('\n{:s}\n'.format(val_filenames[curr_idx]))
+                fp_file.write('Script {:d}\n'.format(curr_idx))
+                print_command(data[j], int_to_char_dict, fp_file)
+
+        y_pred += curr_y_pred
+        y_true += curr_y_true
 
     '''
     # analyze on random 100 samples
@@ -188,6 +224,19 @@ elif args.analyze:
     output = model(data)
     y_pred = list(torch.max(output, dim=1).indices.cpu().numpy())
     y_true = list(torch.max(label, dim=1).indices.cpu().numpy())
+
+    for i in range(len(y_pred)):
+        # false negatives
+        if y_pred[i] == 0 and y_true[i] == 1:
+            fn_file.write('\n{:s}\n'.format(sampled_filenames[i]))
+            fn_file.write('Script {:d}\n'.format(i))
+            print_command(data[i], int_to_char_dict, fn_file)
+        
+        # true positives
+        if y_pred[i] == 1 and y_true[i] == 1:
+            tp_file.write('\n{:s}\n'.format(sampled_filenames[i]))
+            tp_file.write('Script {:d}\n'.format(i))
+            print_command(data[i], int_to_char_dict, tp_file)
     '''
 
     acc = accuracy_score(y_true, y_pred)
@@ -201,41 +250,6 @@ elif args.analyze:
     print('\tprecision: {:f}'.format(prec))
     print('\trecall: {:f}'.format(recall))
     print('\tconfusion matrix (tn, fp, fn, tp): {:d}, {:d}, {:d}, {:d}'.format(tn, fp, fn, tp))
-
-    char_dict = torch.load('char_dict.pth')
-    int_to_char_dict = {}
-    for char in char_dict:
-        int_to_char_dict[char_dict[char]] = char
-    print(int_to_char_dict)
-    fn_file = open('fn.txt', 'w')
-    tp_file = open('tp.txt', 'w')
-
-    def print_command(script_tensor, int_to_char_dict, ffile):
-        script = ''
-        if not (args.model.startswith('lstm') or args.model.startswith('resnet')):
-            script_tensor = script_tensor[0].T
-        script_tensor_idx, script_tensor = torch.nonzero(script_tensor, as_tuple=True)
-        for i in range(script_tensor.shape[0]):
-            if i < script_tensor.shape[0] - 1 and script_tensor_idx[i] == script_tensor_idx[i + 1]:
-                script += int_to_char_dict[int(script_tensor[i])].upper()
-            elif int(script_tensor[i]) != 70:
-                script += int_to_char_dict[int(script_tensor[i])]
-        ffile.write(script)
-
-    for i in range(len(y_pred)):
-        # false negatives
-        if y_pred[i] == 0 and y_true[i] == 1:
-            fn_file.write('\n{:s}\n'.format(val_filenames[i]))
-            # fn_file.write('\n{:s}\n'.format(sampled_filenames[i]))
-            fn_file.write('Script {:d}\n'.format(i))
-            print_command(data[i], int_to_char_dict, fn_file)
-        
-        # true positives
-        if y_pred[i] == 1 and y_true[i] == 1:
-            fn_file.write('\n{:s}\n'.format(val_filenames[i]))
-            # tp_file.write('\n{:s}\n'.format(sampled_filenames[i]))
-            tp_file.write('Script {:d}\n'.format(i))
-            print_command(data[i], int_to_char_dict, tp_file)
 elif args.run:
     TEST_DIR = 'test-scripts/'
     for ffile in os.listdir(TEST_DIR):
