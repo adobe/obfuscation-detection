@@ -105,8 +105,8 @@ epoch = 0
 
 # load data
 if args.model.startswith('lstm') or args.model.startswith('resnet'):
-    train_data = ScriptDataset(torch.load(DATA_DIR + 'lstm_train_data.pth'), device)
-    val_data = ScriptDataset(torch.load(DATA_DIR + 'lstm_val_data.pth'), device)
+    train_data = ScriptDataset(torch.load(DATA_DIR + 'flip_train_data.pth'), device)
+    val_data = ScriptDataset(torch.load(DATA_DIR + 'flip_val_data.pth'), device)
 else:
     train_data = ScriptDataset(torch.load(DATA_DIR + 'train_data.pth'), device)
     val_data = ScriptDataset(torch.load(DATA_DIR + 'val_data.pth'), device)
