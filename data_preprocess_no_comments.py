@@ -100,9 +100,9 @@ for label_file in LABEL_FILES:
         start = -1
         for i in range(len(file_str_split)):
             line = file_str_split[i]
-            if re.match(' *<# *', line):
+            if re.match('[ \t]*<#[ \t]*', line):
                 start = i
-            elif re.match(' *#> *', line) and start != -1:
+            elif re.match('[ \t]*#>[ \t]*', line) and start != -1:
                 multi_line_indices += range(start, i + 1)
                 start = -1
         for i in multi_line_indices[::-1]:
@@ -110,11 +110,11 @@ for label_file in LABEL_FILES:
 
         # filter out single line comments
         # only lines like '# asdf' or '  # asdf', not inline comments
-        file_str_split = [i for i in file_str_split if not re.match(' *#.*', i)]
+        file_str_split = [i for i in file_str_split if not re.match('[ \t]*#.*', i)]
 
         # convert file string into tensor
         file_str = '\n'.join(file_str_split)
-        # if ps_path == 'GithubGist/9to5IT_9620565_raw_04b5a0e0d62290ccf025de4ab9c75597a75d6d9c_Logging_Functions.ps1':
+        # if ps_path == 'InvokeObfuscation/Github/nikkh_dtl/Artifacts/windows-ConfigurationManagerTechnicalPreview/Reset-SqlAdmin.psm1':
         #     print(multi_line_indices)
         #     print(file_str)
         ps_tensor = torch.zeros(len(char_dict) + 1, TENSOR_LENGTH) # + 1 for case bit
