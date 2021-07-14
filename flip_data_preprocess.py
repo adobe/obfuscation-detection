@@ -18,7 +18,7 @@ LABEL_FILES = [
 ]
 PROCESSED_TENSORS_DIR = 'data/processed_tensors/'
 FREQ_CUTOFF = 0.0003 # found from char_frequency.py
-TENSOR_LENGTH = 1024
+TENSOR_LENGTH = 4096
 
 char_freq_file = open('char_freq.txt', 'r')
 char_dict = {}

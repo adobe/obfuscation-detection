@@ -100,7 +100,7 @@ class ResNet(nn.Module):
         x = x + res
         x = x.permute(0, 2, 1)
         pre = torch.sum(x, dim=1, dtype=torch.float)
-        pre /= 1024
+        pre /= 4096
         return torch.softmax(self.pre_out(pre), dim=1)
 
 # end ResNet classes
