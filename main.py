@@ -168,7 +168,7 @@ elif args.analyze:
     data = []
     label = []
     sampled_filenames = []
-    for i in range(100, 200):
+    for i in range(0, 300):
         x, y = val_data[i]
         data.append(x)
         label.append(y)
