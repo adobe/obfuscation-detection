@@ -2,7 +2,7 @@ import pandas as pd
 import torch
 import traceback
 import os
-import random
+import re
 
 # dataset from Bohannon (2017)
 DATA_DIR = 'data/PowerShellCorpus/'
@@ -17,7 +17,7 @@ LABEL_FILES = [
     # 'UnderhandedPowerShell-obfuscation-labeledData.csv'
 ]
 PROCESSED_TENSORS_DIR = 'data/processed_tensors/'
-FREQ_CUTOFF = 0.0002 # found from char_frequency.py
+FREQ_CUTOFF = 0.0003 # found from char_frequency.py
 TENSOR_LENGTH = 1024
 
 char_freq_file = open('char_freq.txt', 'r')
@@ -48,7 +48,6 @@ print('len of chars:', len(char_dict))
 # iterate through labels
 x = 0
 unparseable, num_pos, num_neg = 0, 0, 0
-filenames = []
 for label_file in LABEL_FILES:
     csv = pd.read_csv(LABELS_DIR + label_file)
     # iterate through files
@@ -59,40 +58,78 @@ for label_file in LABEL_FILES:
 
         ps_path = row[0].replace('\\', '/') # windows to mac file reading
         # parse powershell script
+
+        # filter out non-utf8 characters
         try:
             ps_file = open(DATA_DIR + ps_path, 'rb')
-            ps_tensor = torch.zeros(TENSOR_LENGTH, len(char_dict) + 1) # + 1 for case bit
-            tensor_len = min(os.path.getsize(DATA_DIR + ps_path), TENSOR_LENGTH)
-
-            for i in range(tensor_len):
-                byte = ps_file.read(1)
+            file_str = ''
+            byte = ps_file.read(1)
+            while byte:
+                if byte == b'\x00':
+                    # skip this null byte
+                    byte = ps_file.read(1)
+                    continue
                 try:
-                    byte_char = byte.decode('utf-8')
+                    byte_str = str(byte, 'utf-8')
                 except:
-                    continue # invalid char
-                # check for uppercase
-                lower_char = byte_char.lower()
-                if byte_char.isupper() and lower_char in char_dict:
-                    ps_tensor[i][len(char_dict)] = 1
-                    byte_char = lower_char
-                # check if byte is most frequent
-                if byte_char in char_dict:
-                    ps_tensor[i][char_dict[byte_char]] = 1
-            # add to data points to list
-            converted_tensors.append(ps_tensor)
-            if int(row[1]) == 1:
-                num_pos += 1
-                tensor_labels.append(torch.Tensor([0, 1]))
-            else:
-                num_neg += 1
-                tensor_labels.append(torch.Tensor([1, 0]))
+                    # non-utf8 byte
+                    byte = ps_file.read(1)
+                    continue
+                # valid utf-8 byte
+                file_str += byte_str
+                byte = ps_file.read(1)
             ps_file.close()
-
-            filenames.append(ps_path)
-        except Exception as e:
+        except Exception as e: 
             unparseable += 1
             traceback.print_exc()
             print(e)
+            continue
+
+        file_str_split = file_str.splitlines()
+
+        # filter out multi-line comments
+        # only looks at multi-line comment start/end points if they are on their own line
+        # only comments like '<#\nasdfasdf\nasdfasdf\n#>' or '  <# \nasdfasdf\nasdfasdf\n  #> ' 
+        # NOTE: do this before filtering out single line comments b/c '#>' looks like a single-line comment
+        multi_line_indices = []
+        start = -1
+        for i in range(len(file_str_split)):
+            line = file_str_split[i]
+            if re.match(' *<# *', line):
+                start = i
+            elif re.match(' *#> *', line) and start != -1:
+                multi_line_indices += range(start, i + 1)
+                start = -1
+        for i in multi_line_indices[::-1]:
+            del file_str_split[i]
+
+        # filter out single line comments
+        # only lines like '# asdf' or '  # asdf', not inline comments
+        file_str_split = [i for i in file_str_split if not re.match(' *#.*', i)]
+
+        # convert file string into tensor
+        file_str = '\n'.join(file_str_split)
+        # if ps_path == 'GithubGist/9to5IT_9620565_raw_04b5a0e0d62290ccf025de4ab9c75597a75d6d9c_Logging_Functions.ps1':
+        #     print(multi_line_indices)
+        #     print(file_str)
+        ps_tensor = torch.zeros(len(char_dict) + 1, TENSOR_LENGTH) # + 1 for case bit
+        tensor_len = min(len(file_str), TENSOR_LENGTH)
+        for i in range(tensor_len):
+            char = file_str[i]
+            lower_char = char.lower()
+            if char.isupper() and lower_char in char_dict:
+                ps_tensor[len(char_dict)][i] = 1
+                char = lower_char
+            if char in char_dict:
+                ps_tensor[char_dict[char]][i] = 1
+        converted_tensors.append(ps_tensor)
+        if int(row[1]) == 1:
+            num_pos += 1
+            tensor_labels.append(torch.Tensor([0, 1]))
+        else:
+            num_neg += 1
+            tensor_labels.append(torch.Tensor([1, 0]))
+
 
 # print(ps_tensor[0])
 # print(ps_tensor[0].nonzero())
@@ -105,16 +142,14 @@ for label_file in LABEL_FILES:
 print('unparseable files: {:d}'.format(unparseable))
 print(num_pos, num_neg)
 print(converted_tensors[0].shape)
-print(converted_tensors[0][0][23])
-print(converted_tensors[0][0][70])
+print(converted_tensors[0][23][0])
+print(converted_tensors[0][70][0])
+print(converted_tensors[0][14][1])
+print(converted_tensors[0][70][1])
+
 print(tensor_labels[0])
 print(len(converted_tensors))
 print(len(tensor_labels))
-
-# for i in random.sample(range(len(filenames)), 50):
-#     print(filenames[i], tensor_labels[i])
-
-val_filenames = []
 
 # split all data into train, val, test
 train_x = []
@@ -132,26 +167,24 @@ for i in train_idx:
 for i in val_idx:
     val_x.append(converted_tensors[i])
     val_y.append(tensor_labels[i])
-    val_filenames.append(filenames[i])
 for i in test_idx:
     test_x.append(converted_tensors[i])
     test_y.append(tensor_labels[i])
 train_x = torch.stack(train_x)
+train_x = train_x.reshape(train_x.shape[0], 1, train_x.shape[1], train_x.shape[2])
 train_y = torch.stack(train_y)
 val_x = torch.stack(val_x)
+val_x = val_x.reshape(val_x.shape[0], 1, val_x.shape[1], val_x.shape[2])
 val_y = torch.stack(val_y)
 test_x = torch.stack(test_x)
+test_x = test_x.reshape(test_x.shape[0], 1, test_x.shape[1], test_x.shape[2])
 test_y = torch.stack(test_y)
 
 print(train_x.shape, train_y.shape)
 print(val_x.shape, val_y.shape)
 print(test_x.shape, test_y.shape)
 
-# torch.save({'x': train_x, 'y': train_y}, PROCESSED_TENSORS_DIR + 'lstm_train_data.pth')
-# torch.save({'x': val_x, 'y': val_y}, PROCESSED_TENSORS_DIR + 'lstm_val_data.pth')
-# torch.save({'x': test_x, 'y': test_y}, PROCESSED_TENSORS_DIR + 'lstm_test_data.pth')
-# torch.save(char_dict, 'char_dict.pth')
-torch.save(val_filenames, 'val_filenames_list.pth')
-
-# for i in random.sample(range(len(val_filenames)), 20):
-#     print(val_filenames[i], int(torch.argmax(val_y[i])))
+torch.save({'x': train_x, 'y': train_y}, PROCESSED_TENSORS_DIR + 'train_data.pth')
+torch.save({'x': val_x, 'y': val_y}, PROCESSED_TENSORS_DIR + 'val_data.pth')
+torch.save({'x': test_x, 'y': test_y}, PROCESSED_TENSORS_DIR + 'test_data.pth')
+torch.save(char_dict, 'char_dict.pth')

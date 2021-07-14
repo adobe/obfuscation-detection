@@ -162,13 +162,17 @@ if args.eval:
     eval_model('train', model, train_loader, len(train_data), mse)
     eval_model('val', model, val_loader, len(val_data), mse)
 elif args.analyze:
+    val_filenames = torch.load('val_filenames_list.pth')
+
     # random 100 samples
     data = []
     label = []
+    sampled_filenames = []
     for i in range(100, 200):
         x, y = val_data[i]
         data.append(x)
         label.append(y)
+        sampled_filenames.append(val_filenames[i])
     data = Variable(torch.stack(data))
     label = Variable(torch.stack(label))
     output = model(data)
@@ -209,13 +213,15 @@ elif args.analyze:
     for i in range(len(y_pred)):
         # false negatives
         if y_pred[i] == 0 and y_true[i] == 1:
-            fn_file.write('\nScript {:d}\n'.format(i))
-            print_command(val_data[i][0], int_to_char_dict, fn_file)
+            fn_file.write('\n{:s}\n'.format(sampled_filenames[i]))
+            fn_file.write('Script {:d}\n'.format(i))
+            print_command(data[i], int_to_char_dict, fn_file)
         
         # true positives
         if y_pred[i] == 1 and y_true[i] == 1:
-            tp_file.write('\nScript {:d}\n'.format(i))
-            print_command(val_data[i][0], int_to_char_dict, tp_file)
+            tp_file.write('\n{:s}\n'.format(sampled_filenames[i]))
+            tp_file.write('Script {:d}\n'.format(i))
+            print_command(data[i], int_to_char_dict, tp_file)
 elif args.run:
     TEST_DIR = 'test-scripts/'
     for ffile in os.listdir(TEST_DIR):
