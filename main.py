@@ -164,7 +164,17 @@ if args.eval:
 elif args.analyze:
     val_filenames = torch.load('val_filenames_list.pth')
 
-    # random 100 samples
+    # analyze on all val samples
+    y_true = []
+    y_pred = []
+    for i, (data, label) in enumerate(val_loader):
+        data, label = Variable(data), Variable(label)
+        output = model(data)
+        y_pred += list(torch.max(output, dim=1).indices.cpu().numpy())
+        y_true += list(torch.max(label, dim=1).indices.cpu().numpy())
+
+    '''
+    # analyze on random 100 samples
     data = []
     label = []
     sampled_filenames = []
@@ -178,6 +188,7 @@ elif args.analyze:
     output = model(data)
     y_pred = list(torch.max(output, dim=1).indices.cpu().numpy())
     y_true = list(torch.max(label, dim=1).indices.cpu().numpy())
+    '''
 
     acc = accuracy_score(y_true, y_pred)
     f1 = f1_score(y_true, y_pred)
@@ -214,13 +225,15 @@ elif args.analyze:
     for i in range(len(y_pred)):
         # false negatives
         if y_pred[i] == 0 and y_true[i] == 1:
-            fn_file.write('\n{:s}\n'.format(sampled_filenames[i]))
+            fn_file.write('\n{:s}\n'.format(val_filenames[i]))
+            # fn_file.write('\n{:s}\n'.format(sampled_filenames[i]))
             fn_file.write('Script {:d}\n'.format(i))
             print_command(data[i], int_to_char_dict, fn_file)
         
         # true positives
         if y_pred[i] == 1 and y_true[i] == 1:
-            tp_file.write('\n{:s}\n'.format(sampled_filenames[i]))
+            fn_file.write('\n{:s}\n'.format(val_filenames[i]))
+            # tp_file.write('\n{:s}\n'.format(sampled_filenames[i]))
             tp_file.write('Script {:d}\n'.format(i))
             print_command(data[i], int_to_char_dict, tp_file)
 elif args.run:
