@@ -102,9 +102,9 @@ for label_file in LABEL_FILES:
         start = -1
         for i in range(len(file_str_split)):
             line = file_str_split[i]
-            if re.match(' *<# *', line):
+            if re.match('[ \t]*<#[ \t]*', line):
                 start = i
-            elif re.match(' *#> *', line) and start != -1:
+            elif re.match('[ \t]*#>[ \t]*', line) and start != -1:
                 multi_line_indices += range(start, i + 1)
                 start = -1
         for i in multi_line_indices[::-1]:
@@ -112,7 +112,7 @@ for label_file in LABEL_FILES:
 
         # filter out single line comments
         # only lines like '# asdf' or '  # asdf', not inline comments
-        file_str_split = [i for i in file_str_split if not re.match(' *#.*', i)]
+        file_str_split = [i for i in file_str_split if not re.match('[ \t]*#.*', i)]
 
         # convert file string into tensor
         file_str = '\n'.join(file_str_split)
