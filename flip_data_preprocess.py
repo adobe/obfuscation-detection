@@ -175,7 +175,7 @@ train_idx, val_idx, test_idx = torch.utils.data.random_split(range(len(converted
                                                             # hard-calculated 80-15-5 split
                                                             # [8704, 1632, 544], # all samples - 10880
                                                             # [7745, 1452, 484], # no real-world - 9681
-                                                            [7738, 1450, 483], # no real-world + data cleaned - 9671
+                                                            [7738, 1450, 483], # no real-world + data cleaned - 9628
                                                             generator=torch.Generator().manual_seed(42))
 for i in train_idx:
     train_x.append(converted_tensors[i])
