@@ -175,7 +175,7 @@ elif args.analyze:
         ffile.write(script)
 
     model.eval()
-    val_filenames = torch.load('val_filenames_list.pth')
+    filenames = torch.load('val_filenames_list.pth')
     char_dict = torch.load('char_dict.pth')
     int_to_char_dict = {}
     for char in char_dict:
@@ -198,19 +198,19 @@ elif args.analyze:
             curr_idx = i * BATCH_SIZE + j
             # false negatives
             if curr_y_pred[j] == 0 and curr_y_true[j] == 1:
-                fn_file.write('\n{:s}\n'.format(val_filenames[curr_idx]))
+                fn_file.write('\n{:s}\n'.format(filenames[curr_idx]))
                 fn_file.write('Script {:d}\n'.format(curr_idx))
                 print_command(data[j], int_to_char_dict, fn_file)
             
             # false positives
             if curr_y_pred[j] == 1 and curr_y_true[j] == 0:
-                fp_file.write('\n{:s}\n'.format(val_filenames[curr_idx]))
+                fp_file.write('\n{:s}\n'.format(filenames[curr_idx]))
                 fp_file.write('Script {:d}\n'.format(curr_idx))
                 print_command(data[j], int_to_char_dict, fp_file)
 
             # true positives
             if i < 5 and curr_y_pred[j] == 1 and curr_y_true[j] == 1:
-                tp_file.write('\n{:s}\n'.format(val_filenames[curr_idx]))
+                tp_file.write('\n{:s}\n'.format(filenames[curr_idx]))
                 tp_file.write('Script {:d}\n'.format(curr_idx))
                 print_command(data[j], int_to_char_dict, tp_file)
 
