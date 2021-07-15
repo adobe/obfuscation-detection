@@ -160,7 +160,9 @@ print(len(tensor_labels))
 
 # for i in random.sample(range(len(filenames)), 50):
 #     print(filenames[i], tensor_labels[i])
+train_filenames = []
 val_filenames = []
+test_filenames = []
 
 # split all data into train, val, test
 train_x = []
@@ -178,6 +180,7 @@ train_idx, val_idx, test_idx = torch.utils.data.random_split(range(len(converted
 for i in train_idx:
     train_x.append(converted_tensors[i])
     train_y.append(tensor_labels[i])
+    train_filenames.append(filenames[i])
 for i in val_idx:
     val_x.append(converted_tensors[i])
     val_y.append(tensor_labels[i])
@@ -185,6 +188,7 @@ for i in val_idx:
 for i in test_idx:
     test_x.append(converted_tensors[i])
     test_y.append(tensor_labels[i])
+    test_filenames.append(filenames[i])
 train_x = torch.stack(train_x)
 train_y = torch.stack(train_y)
 val_x = torch.stack(val_x)
@@ -200,7 +204,9 @@ torch.save({'x': train_x, 'y': train_y}, PROCESSED_TENSORS_DIR + 'flip_train_dat
 torch.save({'x': val_x, 'y': val_y}, PROCESSED_TENSORS_DIR + 'flip_val_data.pth')
 torch.save({'x': test_x, 'y': test_y}, PROCESSED_TENSORS_DIR + 'flip_test_data.pth')
 torch.save(char_dict, 'char_dict.pth')
+torch.save(train_filenames, 'train_filenames_list.pth')
 torch.save(val_filenames, 'val_filenames_list.pth')
+torch.save(test_filenames, 'test_filenames_list.pth')
 
 # for i in random.sample(range(len(val_filenames)), 20):
 #     print(val_filenames[i], int(torch.argmax(val_y[i])))
