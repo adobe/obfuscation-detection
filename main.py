@@ -174,6 +174,7 @@ elif args.analyze:
                 script += int_to_char_dict[int(script_tensor[i])]
         ffile.write(script)
 
+    model.eval()
     val_filenames = torch.load('val_filenames_list.pth')
     char_dict = torch.load('char_dict.pth')
     int_to_char_dict = {}
@@ -182,6 +183,7 @@ elif args.analyze:
     print(int_to_char_dict)
     fn_file = open('fn.txt', 'w')
     fp_file = open('fp.txt', 'w')
+    tp_file = open('tp.txt', 'w')
 
     # analyze on all val samples
     y_true = []
@@ -205,6 +207,12 @@ elif args.analyze:
                 fp_file.write('\n{:s}\n'.format(val_filenames[curr_idx]))
                 fp_file.write('Script {:d}\n'.format(curr_idx))
                 print_command(data[j], int_to_char_dict, fp_file)
+
+            # true positives
+            if i < 5 and curr_y_pred[j] == 1 and curr_y_true[j] == 1:
+                tp_file.write('\n{:s}\n'.format(val_filenames[curr_idx]))
+                tp_file.write('Script {:d}\n'.format(curr_idx))
+                print_command(data[j], int_to_char_dict, tp_file)
 
         y_pred += curr_y_pred
         y_true += curr_y_true
