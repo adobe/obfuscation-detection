@@ -19,9 +19,9 @@ cuda_device = 0
 torch.manual_seed(42)
 
 class ScriptDataset(torch.utils.data.Dataset):
-    def __init__(self, data, device):
-        self.x = data['x'].to(device)
-        self.y = data['y'].to(device)
+    def __init__(self, data):
+        self.x = data['x']
+        self.y = data['y']
     
     def __len__(self):
         return len(self.y)
@@ -105,11 +105,11 @@ epoch = 0
 
 # load data
 if args.model.startswith('lstm') or args.model.startswith('resnet'):
-    train_data = ScriptDataset(torch.load(DATA_DIR + 'flip_train_data.pth'), device)
-    val_data = ScriptDataset(torch.load(DATA_DIR + 'flip_val_data.pth'), device)
+    train_data = ScriptDataset(torch.load(DATA_DIR + 'flip_train_data.pth'))
+    val_data = ScriptDataset(torch.load(DATA_DIR + 'flip_val_data.pth'))
 else:
-    train_data = ScriptDataset(torch.load(DATA_DIR + 'train_data.pth'), device)
-    val_data = ScriptDataset(torch.load(DATA_DIR + 'val_data.pth'), device)
+    train_data = ScriptDataset(torch.load(DATA_DIR + 'train_data.pth'))
+    val_data = ScriptDataset(torch.load(DATA_DIR + 'val_data.pth'))
 train_loader = torch.utils.data.DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = torch.utils.data.DataLoader(val_data, batch_size=BATCH_SIZE, shuffle=False)
 print('loaded data:', len(train_data), len(val_data))
@@ -133,7 +133,7 @@ def eval_model(dataset_name, model, data_loader, num_data, loss_fn):
     y_pred = []
     for _, (data, label) in enumerate(data_loader):
         # run model
-        data, label = Variable(data), Variable(label)
+        data, label = Variable(data.to(device)), Variable(label.to(device))
         output = model(data)
 
         # calculate loss
@@ -189,7 +189,7 @@ elif args.analyze:
     y_true = []
     y_pred = []
     for i, (data, label) in enumerate(val_loader):
-        data, label = Variable(data), Variable(label)
+        data, label = Variable(data.to(device)), Variable(label.to(device))
         output = model(data)
 
         curr_y_pred = list(torch.max(output, dim=1).indices.cpu().numpy())
@@ -298,7 +298,7 @@ else:
         # run training
         model.train()
         for batch_idx, (data, label) in enumerate(train_loader):
-            data, label = Variable(data), Variable(label)
+            data, label = Variable(data.to(device)), Variable(label.to(device))
             output = model(data)
             loss = mse(output, label)
             optimizer.zero_grad()
