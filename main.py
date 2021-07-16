@@ -1,5 +1,6 @@
 import argparse
 import os
+import pandas as pd
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -115,7 +116,7 @@ val_loader = torch.utils.data.DataLoader(val_data, batch_size=BATCH_SIZE, shuffl
 print('loaded data:', len(train_data), len(val_data))
 
 best_val_acc = 0.
-if args.eval or not args.reset:
+if not args.reset:
     # load checkpoint if eval or not retraining
     checkpoint = torch.load(model_file, map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
@@ -259,6 +260,57 @@ elif args.analyze:
     print('\trecall: {:f}'.format(recall))
     print('\tconfusion matrix (tn, fp, fn, tp): {:d}, {:d}, {:d}, {:d}'.format(tn, fp, fn, tp))
 elif args.run:
+    real_world_data = ScriptDataset(torch.load(DATA_DIR + 'flip_train_data_real_world.pth'))
+    real_world_loader = torch.utils.data.DataLoader(real_world_data, batch_size=BATCH_SIZE, shuffle=False)
+
+    LABELS_DIR =  '../Revoke-Obfuscation/DataScience/'
+    githubgist_file = pd.read_csv(LABELS_DIR + 'GithubGist-obfuscation-labeledData.csv')
+    poshcode_file = pd.read_csv(LABELS_DIR + 'PoshCode-obfuscation-labeledData.csv')
+    technet_file = pd.read_csv(LABELS_DIR + 'TechNet-obfuscation-labeledData.csv')
+    real_world_filenames = torch.load('filenames_real_world.pth')
+
+    new_githubgist_file = open('new-GithubGist-obfuscation-labeledData.csv', 'w')
+    new_poshcode_file = open('new-PoshCode-obfuscation-labeledData.csv', 'w')
+    new_technet_file = open('new-TechNet-obfuscation-labeledData.csv', 'w')
+
+    def write_negatives(old_file, new_file):
+        new_file.write('"Path","Label"')
+        for _, row in old_file.iterrows():
+            if int(row[1]) == 0:
+                new_file.write('"{:s}","0"'.format(row[0]))
+    
+    def write_label(ffile, filename, label):
+        filename = filename.replace('/', '\\')
+        ffile.write('"{:s}","{:d}"'.format(filename, label))
+
+    write_negatives(githubgist_file, new_githubgist_file)
+    write_negatives(poshcode_file, new_poshcode_file)
+    write_negatives(technet_file, new_technet_file)
+
+    model.eval()
+    preds = []
+    for _, (data, label) in enumerate(real_world_loader):
+        data, label = Variable(data.to(device)), Variable(label.to(device))
+        output = model(data)
+        preds += list(torch.max(output, dim=1).indices.cpu().numpy())
+    
+    for i in range(len(preds)):
+        filename = real_world_filenames[i]
+        pred = preds[i]
+        if filename.startswith('GithubGist'):
+            write_label(new_githubgist_file, filename, pred)
+        elif filename.startswith('PoshCode'):
+            write_label(new_poshcode_file, filename, pred)
+        elif filename.startswith('TechNet'):
+            write_label(new_technet_file, filename, pred)
+        else:
+            print('ERROR:', filename)
+        
+        if pred == 0:
+            print('pred 0:', filename)
+
+
+    '''
     TEST_DIR = 'test-scripts/'
     for ffile in os.listdir(TEST_DIR):
         TENSOR_LENGTH = 1024
@@ -291,6 +343,7 @@ elif args.run:
             print(ffile + ' output:', int(torch.argmax(output[0])))
         except Exception as e:
             print(e)
+    '''
 else:
     # train model
     for i in range(epoch, EPOCHS):
