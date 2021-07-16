@@ -17,7 +17,7 @@ LABEL_FILES = [
     # 'UnderhandedPowerShell-obfuscation-labeledData.csv'
 ]
 PROCESSED_TENSORS_DIR = 'data/processed_tensors/'
-FREQ_CUTOFF = 0.0003 # found from char_frequency.py
+FREQ_CUTOFF = 0.00002 # found from char_frequency.py to include ^
 TENSOR_LENGTH = 4096
 
 char_freq_file = open('char_freq.txt', 'r')
@@ -150,9 +150,9 @@ print('unparseable files: {:d}'.format(unparseable))
 print(num_pos, num_neg)
 print(converted_tensors[0].shape)
 print(converted_tensors[0][0][23])
-print(converted_tensors[0][0][70])
+print(converted_tensors[0][0][73])
 print(converted_tensors[0][1][14])
-print(converted_tensors[0][1][70])
+print(converted_tensors[0][1][73])
 
 print(tensor_labels[0])
 print(len(converted_tensors))
@@ -175,7 +175,8 @@ train_idx, val_idx, test_idx = torch.utils.data.random_split(range(len(converted
                                                             # hard-calculated 80-15-5 split
                                                             # [8704, 1632, 544], # all samples - 10880
                                                             # [7745, 1452, 484], # no real-world - 9681
-                                                            [7704, 1444, 481], # no real-world + data cleaned - 9629
+                                                            # [7704, 1444, 481], # no real-world + data cleaned - 9629
+                                                            [8633, 1618, 539], # real-world filtered + data cleaned - 10790
                                                             generator=torch.Generator().manual_seed(42))
 for i in train_idx:
     train_x.append(converted_tensors[i])

@@ -62,7 +62,7 @@ class ResNet(nn.Module):
         super(ResNet, self).__init__()
         NUM_LAYERS = 3
         NUM_FILTERS = 512
-        input_size = 71
+        input_size = 74
         convolutions_char = []
         self.num_filters = NUM_FILTERS
         for _ in range(NUM_LAYERS):

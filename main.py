@@ -35,6 +35,7 @@ parser.add_argument('--reset', help='start over training', action='store_true')
 parser.add_argument('--eval', help='eval model', action='store_true')
 parser.add_argument('--analyze', help='analyze statistics and samples of model', action='store_true')
 parser.add_argument('--run', help='run model on a real script', action='store_true')
+parser.add_argument('--test', help='eval model on test set', action='store_true')
 parser.add_argument('--model', default='cnn', help='model to run (mlp, deep-mlp, cnn, deep-cnn)')
 parser.add_argument('--model_file', default='cnn-shallow-conv-1-fc-2048-1024.pth', help='model file to save/load')
 parser.add_argument('--cuda_device', default=0, type=int, help='which cuda device to use')
@@ -162,6 +163,11 @@ if args.eval:
     # eval model
     eval_model('train', model, train_loader, len(train_data), mse)
     eval_model('val', model, val_loader, len(val_data), mse)
+elif args.test:
+    # eval model on test
+    test_data = ScriptDataset(torch.load(DATA_DIR + 'flip_test_data.pth'))
+    test_loader = torch.utils.data.DataLoader(test_data, batch_size=BATCH_SIZE, shuffle=False)
+    eval_model('test', model, test_loader, len(test_data), mse)
 elif args.analyze:
     def print_command(script_tensor, int_to_char_dict, ffile):
         script = ''
@@ -171,7 +177,7 @@ elif args.analyze:
         for i in range(script_tensor.shape[0]):
             if i < script_tensor.shape[0] - 1 and script_tensor_idx[i] == script_tensor_idx[i + 1]:
                 script += int_to_char_dict[int(script_tensor[i])].upper()
-            elif int(script_tensor[i]) != 70:
+            elif int(script_tensor[i]) != 73:
                 script += int_to_char_dict[int(script_tensor[i])]
         ffile.write(script)
 
@@ -274,14 +280,14 @@ elif args.run:
     new_technet_file = open('new-TechNet-obfuscation-labeledData.csv', 'w')
 
     def write_negatives(old_file, new_file):
-        new_file.write('"Path","Label"')
+        new_file.write('"Path","Label"\n')
         for _, row in old_file.iterrows():
             if int(row[1]) == 0:
-                new_file.write('"{:s}","0"'.format(row[0]))
+                new_file.write('"{:s}","0"\n'.format(row[0]))
     
     def write_label(ffile, filename, label):
         filename = filename.replace('/', '\\')
-        ffile.write('"{:s}","{:d}"'.format(filename, label))
+        ffile.write('"{:s}","{:d}"\n'.format(filename, label))
 
     write_negatives(githubgist_file, new_githubgist_file)
     write_negatives(poshcode_file, new_poshcode_file)
@@ -294,6 +300,7 @@ elif args.run:
         output = model(data)
         preds += list(torch.max(output, dim=1).indices.cpu().numpy())
     
+    pred1s = 0
     for i in range(len(preds)):
         filename = real_world_filenames[i]
         pred = preds[i]
@@ -306,9 +313,12 @@ elif args.run:
         else:
             print('ERROR:', filename)
         
-        if pred == 0:
-            print('pred 0:', filename)
+        if pred == 1:
+            pred1s += 1
+            print('pred 1 {:d}:'.format(pred1s), filename)
 
+    print('pred 0s:', preds.count(0))
+    print('pred 1s:', preds.count(1))
 
     '''
     TEST_DIR = 'test-scripts/'
