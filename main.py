@@ -106,9 +106,12 @@ mse = nn.MSELoss()
 epoch = 0
 
 # load data
-if args.model.startswith('lstm') or args.model.startswith('resnet'):
+if args.model.startswith('lstm'):
     train_data = ScriptDataset(torch.load(DATA_DIR + 'flip_train_data.pth'))
     val_data = ScriptDataset(torch.load(DATA_DIR + 'flip_val_data.pth'))
+elif args.model.startswith('resnet'):
+    train_data = ScriptDataset(torch.load(DATA_DIR + 'resnet_train_data.pth'))
+    val_data = ScriptDataset(torch.load(DATA_DIR + 'resnet_val_data.pth'))
 else:
     train_data = ScriptDataset(torch.load(DATA_DIR + 'train_data.pth'))
     val_data = ScriptDataset(torch.load(DATA_DIR + 'val_data.pth'))
@@ -165,7 +168,7 @@ if args.eval:
     eval_model('val', model, val_loader, len(val_data), mse)
 elif args.test:
     # eval model on test
-    test_data = ScriptDataset(torch.load(DATA_DIR + 'flip_test_data.pth'))
+    test_data = ScriptDataset(torch.load(DATA_DIR + 'resnet_test_data.pth'))
     test_loader = torch.utils.data.DataLoader(test_data, batch_size=BATCH_SIZE, shuffle=False)
     eval_model('test', model, test_loader, len(test_data), mse)
 elif args.analyze:

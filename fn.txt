@@ -1,0 +1,2099 @@
+
+InvokeObfuscation/Github/illearth_powershell-taglib/taglib.psm1
+Script 3
+
+filter set-artist([string]$artist) {
+    $tag = [TagLib.File]::Create($_.fullname)
+    $tag.Tag.AlbumArtists = $artist
+    $tag.Tag.Performers = $artist
+    $tag.Save()
+}
+
+filter set-title([string]$title) {
+    $tag = [TagLib.File]::Create($_.fullname)
+    $tag.Tag.Title =  $(if ($title) { $title } else { $_.baseName })
+    $tag.Save()
+}
+
+filter set-album([string]$album) {
+    $tag = [TagLib.File]::Create($_.fullname)
+    $tag.Tag.Album = $album
+    $tag.Save()
+}    
+
+filter set-track([int]$track, [int]$trackCount = 0) {
+    $tag = [TagLib.File]::Create($_.fullname)
+    $tag.Tag.Track = $track
+    $tag.Tag.TrackCount = $trackCount
+    $tag.Save()
+}    
+
+filter set-disc([int]$disc, [int]$discCount = 0) {
+    $tag = [TagLib.File]::Create($_.fullname)
+    $tag.Tag.Track = $disc
+    $tag.Tag.TrackCount = $discCount
+    $tag.Save()
+}    
+
+function update-trackAndDisc([string]$match = ('D'+'(?<'+'d'+'isc>[0-9]+)T(?<track>'+'['+'0-9'+']'+'+)'))
+{
+    begin {
+        $total = 0
+        $discs = @{}
+    }
+    process {
+        if ($_.fullname -match $match) {
+            $disc = $matches[('d'+'isc')]
+            $track = $matches[('trac'+'k')]
+            if( $discs[$disc] ) { $tags = $discs[$disc] } else { $tags = @() }
+            $tagFile = [TagLib.File]::Create($_.fullname)
+            $tagFile.Tag.Track = $track
+            $tagFile.Tag.Disc = $disc
+            $tags += $tagFile
+            $discs[$disc] = $tags
+            $total++
+        }
+    }
+    end {
+        foreach ($key in $discs.keys) {
+            $tags = $discs[$key]
+            $trackCount = $tags.length
+            
+            foreach ($tagFile in $tags) {
+                $tagFile.Tag.TrackCount = $trackCount;
+                $tagFile.Tag.DiscCount = $discs.keys.count
+                $tagFile.Save()
+            }
+        }
+    }
+}
+InvokeObfuscation/PowerShellGallery/Start-parallel/1.3.0.0/Start-parallel.psm1
+Script 66
+Function s`T`ART`-paRaLl`El {
+    [CmdletBinding(DefaultParameterSetName='Command')]
+    Param  (
+          [parameter(Mandatory=$true,ParameterSetName="Command",HelpMessage="Enter the command to process",Position=0)]
+          $Command , 
+          [parameter(Mandatory=$true,ParameterSetName="Block")]
+          $Scriptblock,
+          $TaskDisplayName = "Tasks", 
+          [Parameter(ValueFromPipeline=$true)]$InputObject,
+          [int]$MaxThreads           = 50,
+          [int]$MilliSecondsDelay    = 200,
+          [int]$MaxRunSeconds        = 300
+    )
+    Begin  { #Figure out what it is we have to run: did we get -command or -scriptblock and was either a file name ? 
+        Write-Progress -Activity "Setting up $TaskDisplayName"  -Status "Initializing"    
+        if ($PSCmdlet.ParameterSetName -eq "Command") {
+            try   { $Command = Get-Command -Name  $Command  }
+            catch { Throw "$command does not appear to be a valid command."}
+        }
+        else {  if ($Scriptblock -isnot [scriptblock] -and   (Test-Path -Path  $Scriptblock) )  {
+                    $ScriptBlock      = [scriptblock]::create((Get-Item -Path  $Scriptblock).OpenText().ReadToEnd()) }
+                if ($Scriptblock -isnot [scriptblock]) {Throw "Invalid Scriptblock"}          
+        }
+        $taskList     = @()
+        $runspacePool = [runspacefactory]::CreateRunspacePool(1, $MaxThreads)
+        $runspacePool.Open()
+        Write-Verbose -Message ("Runspace pool opened at " + ([datetime]::Now).ToString("HH:mm:ss.ffff"))
+    }
+    Process{ #Usually we're going to recieve parameters via the pipeline, so the threads get set up here. 
+         ForEach  ($object in $InputObject)  { #setup a PowerShell pipeline ; set-up what will be run and the parameters and add it to the pool
+            if    ($ScriptBlock )            { $newThread = [powershell]::Create().AddScript($ScriptBlock)  }
+            else                             { $newThread = [powershell]::Create().AddCommand($Command)     } 
+            if      ($object -is [Int] -or
+                     $object -is [string]   ) { $newThread.AddArgument($object)             | Out-Null  }
+            elseif  ($object -is [hashtable]) {
+                ForEach ($key in $object.Keys){ $newThread.AddParameter($key, $object.$key) | Out-Null  }
+            }
+            elseif  ($object -is [psobject])  {
+                Foreach ($key in (Get-Member -InputObject $object -MemberType ("{2}{3}{0}{1}"-f 'roper','ty','Not','eP')).Name) {
+                                                $newThread.AddParameter($key, $object.$key) | Out-Null 
+                }
+            }
+ 
+            $newThread.RunspacePool = $runspacePool
+            $handle                 = $newThread.BeginInvoke()
+            $taskList              += New-Object -TypeName ("{2}{0}{1}"-f 'ob','ject','ps') -Property @{"Handle"=$handle; "Thread"=$newThread;}
+            Write-Progress -Activity "Setting up $TaskDisplayName"  -Status ("Created: " + $taskList.Count + " tasks" )
+        }
+        $taskList | Where-Object {$_.Handle.IsCompleted } | ForEach-Object {
+                $_.Thread.EndInvoke($_.Handle)
+                $_.Thread.Dispose()
+                $_.Thread = $_.Handle = $Null
+        }
+    }
+    End    {#We have a bunch of threads running.  Keep looping round until they all complete or we hit our time out, 
+        Write-Verbose  -Message ("Last of $($tasklist.count) threads started: " + ([datetime]::Now).ToString("HH:mm:ss.ffff"))
+        Write-Verbose  -Message ("Waiting for " + $TaskList.where({ $_.Handle.IsCompleted -eq $false}).count.tostring()  + " to complete.") 
+        Write-Progress -Activity "Setting up $TaskDisplayName"  -Completed
+        $endBy = (Get-Date).AddSeconds($MaxRunSeconds) 
+        While ($TaskList.where({$_.Handle}) -and (Get-Date) -lt $endBy)  {
+            $UnFinishedCount = $TaskList.where({ $_.Handle.IsCompleted -eq $false}).count
+            Write-Progress -Activity "Waiting for $TaskDisplayName to complete" -Status "$UnFinishedCount tasks remaining" -PercentComplete (100 * ($Tas
+InvokeObfuscation/Technet/PowershellVD.ps1
+Script 67
+Add-PSSnapin ('M'+'i'+'cro'+'soft.Exc'+'hange.Manag'+'emen'+'t.Powe'+'r'+'Shell'+'.'+'E201'+'0')
+$SRVSettings = Get-ADServerSettings
+if ($SRVSettings.ViewEntireForest -eq "False")
+	{
+		Set-ADServerSettings -ViewEntireForest $true
+	}
+$PWSVDS = Get-ClientAccessServer | Get-PowershellVirtualDirectory
+$ClassHeaderPWSVD = "heading1"
+foreach ($PWSVD in $PWSVDS){
+		$PWSrv = $PWSVD.server
+		$PWName = $PWSVD.name
+		$PWCE = $PWSVD.CertificateAuthentication
+		$PWSSL = $PWSVD.RequireSSL	
+		$PWM = $PWSVD.MetabasePath
+		$PWP = $PWSVD.Path		
+		$PWIURL = $PWSVD.InternalURL		
+		$PWEURL = $PWSVD.ExternalURL
+		
+    $DetailPWSVD+=  "					<tr>"
+    $DetailPWSVD+=  "					<th width='10%'><b>Server : <font color='#0000FF'>$($PWSrv)</font><th width='10%'>Name : <font color='#0000FF'>$($PWName)</font><th width='10%'>CertificateAuthentication : <font color='#0000FF'>$($PWCE)</b></font></td></th>"
+    $DetailPWSVD+=  "					</tr>"
+	$DetailPWSVD+=  "					<tr>"	
+    $DetailPWSVD+=  "					<th width='10%'><b>RequireSSL : <font color='#0000FF'>$($PWSSL)</font><th width='10%'>MetabasePath : <font color='#0000FF'>$($PWM)</font><th width='10%'>Path : <font color='#0000FF'>$($PWP)</b></font></td></th>"	
+    $DetailPWSVD+=  "					</tr>"
+	$DetailPWSVD+=  "					<tr>"	
+    $DetailPWSVD+=  "					<th width='10%'><b>InternalUrl : <font color='#0000FF'>$($PWIURL)</b><th width='10%'>ExternalUrl : <font color='#0000FF'>$($PWEURL)</font></td></th>"	
+    $DetailPWSVD+=  "					</tr>"
+	$DetailPWSVD+=  "					<tr>"	
+	$DetailPWSVD+=  "					<th width='10%'><b>______________________________________________________________________</b></font></th>"
+	$DetailPWSVD+=  "					</tr>"
+}
+$Report += @"
+	</TABLE>
+	            <div>
+        <div>
+    <div class='container'>
+        <div class='$($ClassHeaderPWSVD)'>
+            <SPAN class=sectionTitle tabIndex=0>Client Access Server - Powershell Virtual Directory</SPAN>
+            <a class='expando' href='#'></a>
+        </div>
+        <div class='container'>
+            <div class='tableDetail'>
+                <table>
+	  			<tr>
+							
+ 		   		</tr>
+                    $($DetailPWSVD)
+                </table>
+            </div>
+        </div>
+        <div class='filler'></div>
+    </div>  
+
+"@
+Return $Report
+IseSteroids/PoshCode/New-XVM_4.ps1
+Script 241
+
+
+Function New-XVM
+{
+    [cmdletbinding()]
+    Param
+    (
+        [Parameter(Mandatory=$false,Position=1)]
+        [string]$ComputerName=$env:COMPUTERNAME,        
+        [Parameter(Mandatory=$true,Position=2)]
+        [string]$Name,
+        [Parameter(Mandatory=$true,Position=3)]
+        [string]$SwitchName,
+        [Parameter(Mandatory=$true,Position=4)]
+        [ValidateSet("NoVHD","ExistingVHD","NewVHD","Differencing")]
+        [string]$VhdType,
+        [Parameter(Mandatory=$false,Position=5)]
+        [hashtable]$Configuration
+    )
+    DynamicParam
+    {
+        Switch ($VhdType) {
+            "ExistingVHD" {
+                $attributes = New-Object System.Management.Automation.ParameterAttribute
+                $attributes.ParameterSetName = "_AllParameterSets"
+                $attributes.Mandatory = $true
+                $attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+                $attributeCollection.Add($attributes)
+                $vhdPath = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("VhdPath", [String], $attributeCollection)
+                $paramDictionary = New-Object -Type System.Management.Automation.RuntimeDefinedParameterDictionary
+                $paramDictionary.Add("VhdPath",$vhdPath)
+                return $paramDictionary
+                break
+            }
+            "NewVHD" {
+                $attributes = New-Object System.Management.Automation.ParameterAttribute
+                $attributes.ParameterSetName = "_AllParameterSets"
+                $attributes.Mandatory = $false
+                $attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+                $attributeCollection.Add($attributes)
+                $diskType = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("DiskType", [String], $attributeCollection)
+                $paramDictionary = New-Object -Type System.Management.Automation.RuntimeDefinedParameterDictionary
+                $paramDictionary.Add("DiskType",$diskType)
+                $attributes = New-Object System.Management.Automation.ParameterAttribute
+                $attributes.ParameterSetName = "_AllParameterSets"
+                $attributes.Mandatory = $false
+                $attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+                $attributeCollection.Add($attributes)
+                $diskSize = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("DiskSize", [uint64], $attributeCollection)
+                $paramDictionary.Add("DiskSize",$diskSize)
+                return $paramDictionary
+                break
+            }
+            "Differencing" {
+                $attributes = New-Object System.Management.Automation.ParameterAttribute
+                $attributes.ParameterSetName = "_AllParameterSets"
+                $attributes.Mandatory = $true
+                $attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+                $attributeCollection.Add($attributes)
+                $parentVhdPath = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("ParentVhdPath", [String], $attributeCollection)
+                $paramDictionary = New-Object -Type System.Management.Automation.RuntimeDefinedParameterDictionary
+                $paramDictionary.Add("ParentVhdPath",$parentVhdPath)
+                return $paramDictionary
+            }
+        }
+    }
+    Begin
+    {
+        Try
+        {
+            $vmHost = Get-VMHost -ComputerName $ComputerName -ErrorAction:Stop
+        }
+        Catch
+        {
+            $PSCmdlet.ThrowTerminatingError($Error[0])
+        }
+        $defaultVirtualHardDiskPath = $vmHost.VirtualHardDiskPath
+    }
+    Process
+    {
+        $validConfigNames = "MemoryStartupBytes","BootDevice"
+        $configParams = @()
+        Switch ($VhdType) {
+            "NoVHD" {
+                $newVhdPath = $null
+            }
+            "ExistingVHD" {
+                $ne
+InvokeObfuscation/PowerShellGallery/Rubrik/3.1.0.27/Private/Test-ReturnFormat.ps1
+Script 250
+function teS`T-`RetURN`FO`Rmat($api,$result,$location)
+{
+
+  Write-Verbose -Message 'Formatting return value'
+  if ($location -and ($result).$location -ne $null) 
+  {
+    return ($result).$location
+  }
+  else
+  {
+    return $result
+  }
+}
+IseSteroids/Technet/SearchOSCEXLegacyDN.psm1
+Script 265
+
+
+Import-LocalizedData -BindingVariable Messages
+
+$webSvcInstallDirRegKey = gp -Path "HKLM:\SOFTWARE\Microsoft\Exchange\Web Services\2.0" -PSProperty "Install Directory" -ErrorAction:SilentlyContinue
+if ($webSvcInstallDirRegKey -ne $null) {
+	$moduleFilePath = $webSvcInstallDirRegKey.'Install Directory' + 'Microsoft.Exchange.WebServices.dll'
+	ipmo $moduleFilePath
+} else {
+	$errorMsg = $Messages.InstallexServiceModule
+	throw $errorMsg
+}
+
+Function ___/\/\/\/=\____/\
+{
+	[CmdletBinding()]
+	Param
+	(
+		[Parameter(Mandatory=$true,Position=1)][String]$ExceptionString,
+		[Parameter(Mandatory=$true,Position=2)][String]$ErrorID,
+		[Parameter(Mandatory=$true,Position=3)][System.Management.Automation.ErrorCategory]$ErrorCategory,
+		[Parameter(Mandatory=$true,Position=4)][PSObject]$TargetObject
+	)
+	Process
+	{
+		$exception = New-Object System.Management.Automation.RuntimeException($ExceptionString)
+		$customError = New-Object System.Management.Automation.ErrorRecord($exception,$ErrorID,$ErrorCategory,$TargetObject)
+		return $customError
+	}
+}
+
+Function Connect-OSCEXWebService
+{
+
+    [cmdletbinding()]
+	Param
+	(
+		[Parameter(Mandatory=$false,Position=1)]
+		[System.Management.Automation.PSCredential]$Credential,
+		[Parameter(Mandatory=$false,Position=2)]
+		[Microsoft.Exchange.WebServices.Data.ExchangeVersion]$ExchangeVersion="Exchange2010_SP2",
+		[Parameter(Mandatory=$false,Position=3)]
+		[string]$TimeZoneStandardName,
+		[Parameter(Mandatory=$false)]
+		[switch]$Force
+	)
+	Process
+	{
+        if (-not [System.String]::IsNullOrEmpty($TimeZoneStandardName)) {
+            Try
+            {
+                $tzInfo = [System.TimeZoneInfo]::FindSystemTimeZoneById($TimeZoneStandardName)
+            }
+            Catch
+            {
+                $PSCmdlet.ThrowTerminatingError($_)
+            }
+        } else {
+            $tzInfo = $null
+        }
+
+		Try
+		{
+			$directoryEntry = New-Object System.DirectoryServices.DirectoryEntry
+			$currentDomain = New-Object System.DirectoryServices.DirectoryEntry("LDAP://" + $directoryEntry.distinguishedName)
+			$currentUserName = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name.Split("\")[1]
+			$driectorySearcher = New-Object System.DirectoryServices.DirectorySearcher(`
+									$currentDomain,"sAMAccountName=$currentUserName")
+			$driectorySearcher.PropertiesToLoad.Add("mail") | Out-Null
+			$currentUserMailAddress = $driectorySearcher.FindOne().GetDirectoryEntry().Properties["mail"].ToString()
+			if (-not [System.String]::IsNullOrEmpty($currentUserMailAddress)) {
+				$userName = $currentUserMailAddress
+			} else {
+				$errorMsg = $Messages.RequiresUserMailAddress
+				$errorMsg = $errorMsg -f $currentUserName
+				$customError = ___/\/\/\/=\____/\ `
+				-ExceptionString $errorMsg `
+				-ErrorCategory NotSpecified -ErrorID 1 -TargetObject $PSCmdlet
+				$PSCmdlet.ThrowTerminatingError($customError)					
+			}			
+		}
+		Catch
+		{
+			$PSCmdlet.ThrowTerminatingError($_)
+		}
+	
+		$existingExSvcVar = (gv -Name exService -Scope Global -ErrorAction:SilentlyContinue) -ne $null
+		
+		if ((-not $existingExSvcVar) -or $Force) {
+			$verboseMsg = $Messages.EstablishConnection
+			$PSCmdlet.WriteVerbose($verboseMsg)
+            if ($tzInfo -ne $null) {
+                $exService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService(`
+				    		 [Microsoft.Exchange.WebServices.Data.ExchangeVersion]::$ExchangeVersion,$tzInfo)			
+            } else {
+                $exService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService(`
+				    		 [Microsoft.Exchange.WebServices.Data.ExchangeVersion]::$ExchangeVersion)
+            }
+			
+			if ($Credential -ne $null) {
+				$userName = $Credential.UserName
+				$exService.Credentials = $Credential.GetNetworkCredential()
+			} else {
+				$exService.UseDefaultCredentials = $true
+			}
+			Try
+			{
+				$exService.AutodiscoverUrl($userName,$validateRedirectionUrlCallback)
+				$verboseMsg = $Messages.SaveExWebSvcVariable
+				$PSCmdlet.WriteVerbose($verboseMsg)
+				sv -Name exService -Value $exService -Scope Global -Force
+			}
+			Catch [Microsoft.Exchange.WebServices
+IseSteroids/PowerShellGallery/psFitbit/1.0.0.2/psFitbit.psm1
+Script 353
+$psFitb1tDebugging = $true
+$psFitb1tLogging = $true
+$Script:psFitb1tScope = "activity%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight"
+$Script:psFitb1tTokenAge = "2592000"
+$Script:psFitb1tRedirectURL = "https://localhost/psfitb1t"
+$Script:psFitb1tHRQueryDate = ""
+$Script:psFitb1tTokenReturnedAge = ""
+$Script:psFitb1tAuthCode = ""
+$Script:psFitb1tInvocationPath = $([System.IO.Path]::GetDirectoryName($MyInvocation.MyCommand.Definition) + "\")
+$Script:psFitb1tLogPath = $($psFitb1tInvocationPath) + "Logs\"
+function Connect-OAuthFitbit
+{
+	[CmdletBinding()]
+	[OutputType([System.String])]
+	param	(					
+	)	
+	BEGIN
+	{		
+		(Write-Status -Message "START  - Connect-OAuthFitbit function execution" -Status "INFO" -Debugging:$psFitb1tDebugging -Logging:$psFitb1tLogging -Logpath $psFitb1tLogPath)
+		try
+		{
+			(Write-Status -Message "START  - Loading DOTNET assemblies" -Status "INFO" -Debugging:$psFitb1tDebugging -Logging:$psFitb1tLogging -Logpath $psFitb1tLogPath)
+			[Reflection.Assembly]::LoadWithPartialName("System.Security") | Out-Null
+			[Reflection.Assembly]::LoadWithPartialName("System.Net") | Out-Null
+			[Reflection.Assembly]::LoadWithPartialName("System.Web") | Out-Null
+			(Write-Status -Message "FINISH - Loading DOTNET assemblies" -Status "INFO" -Debugging:$psFitb1tDebugging -Logging:$psFitb1tLogging -Logpath $psFitb1tLogPath)
+		}
+		catch
+		{
+			Throw $("ERROR OCCURRED WHILE LOADING REQUIRED DOTNET ASSEMBLIES " + $_.Exception.Message)			
+		}
+		try
+		{			
+			if ($((Test-Path -Path HKCU:\Software\psFitb1t) -eq $false) `
+			   -or $((gi HKCU:\Software\psFitb1t).getvalue("psFitb1tClientID") -eq $null) `
+				-or $((gi HKCU:\Software\psFitb1t).getvalue("psFitb1tRedirectURL") -eq $null)				
+			   )
+			{
+				(Write-Status -Message "Fitbit API settings not found - prompting operator" -Status "WARNING" -Debugging:$psFitb1tDebugging -Logging:$psFitb1tLogging -Logpath $psFitb1tLogPath)
+				Set-FitbitOAuthTokens
+			}
+			else
+			{
+				(Write-Status -Message "START  - Retrieving Fitbit API settings from registry" -Status "INFO" -Debugging:$psFitb1tDebugging -Logging:$psFitb1tLogging -Logpath $psFitb1tLogPath)
+				$Script:psFitb1tClientID				= (gi HKCU:\Software\psFitb1t).getvalue("psFitb1tClientID")
+				$Script:psFitb1tRedirectURL			= (gi HKCU:\Software\psFitb1t).getvalue("psFitb1tRedirectURL")				
+				$Script:psFitb1tTokenReturnedAge 	= (gi HKCU:\Software\psFitb1t).getvalue("psFitb1tTokenAge")
+				$Script:psFitb1tAuthToken 		= (gi HKCU:\Software\psFitb1t).getvalue("psFitb1tAuthToken")
+				(Write-Status -Message "FINISH - Retrieving Fitbit API settings from registry" -Status "INFO" -Debugging:$psFitb1tDebugging -Logging:$psFitb1tLogging -Logpath $psFitb1tLogPath)
+			}			
+		}
+		catch
+		{
+			Throw $("ERROR OCCURRED WHILE LOADING REQUIRED FITBIT API INFORMATION " + $_.Exception.Message)
+		}
+	}
+	PROCESS
+	{
+		try
+		{
+			$objOAuth = @()
+			$objOAuth = New-Object -TypeName PSObject
+			$objOAuth | Add-Member -Name 'client_id' -Value $($psFitb1tClientID) -MemberType NoteProperty -Force
+			$objOAuth | Add-Member -Name 'redirect_uri' -Value $($psFitb1tRedirectURL) -MemberType NoteProperty -Force
+			$objOAuth | Add-Member -Name 'scope' -Value $($psFitb1tScope) -MemberType NoteProperty -Force
+			$objOAuth | Add-Member -Name 'expires_in' -Value $($psFitb1tTokenAge) -MemberType NoteProperty -Force
+			$objOAuth | Add-Member -Name 'token_remaining' -Value $($psFitb1tTokenReturnedAge) -MemberType NoteProperty -Force
+			$objOAuth | Add-Member -Name 'date' -Value $($psFitb1tHRQueryDate) -MemberType NoteProperty -Force
+			$objOAuth | Add-Member -Name 'access_token' -Value $($psFitb1tAuthToken) -MemberType NoteProperty -Force
+			if ($($Script:psFitb1tTokenReturnedAge) -and  $(Test-Date -inputDate $Script:psFitb1tTokenReturnedAge) -and $( [DateTime]$(get-date ([System.DateTime]::Now) -Format s) -lt [DateTime]$(Get-Date($psFitb1tTokenReturnedAge)) )  )
+			{
+				write-verbose "Token Okay"
+				[string]$oAuthRequestString = $psFitb1tAuthToken
+			}
+			else
+			{
+				write-verbose "Token Expired $($Script:psFitb1tTokenReturnedAge)"
+				[s
+InvokeObfuscation/PowerShellGallery/OhMyPsh/0.0.5/plugins/fileutils/Load.ps1
+Script 383
+$PreLoad = {}
+$PostLoad = {}
+$Config = {}
+$Shutdown = {}
+$Unload = {}
+IseSteroids/PowerShellGallery/DSCEA/1.2.0.0/DSCEA.psm1
+Script 427
+[string]$webstyle = @'
+<style>
+BODY{background-color:#0078D7; margin-left:50px; margin-right:auto;}
+TABLE{border-width:1px; border-style:solid; border-color:black; border-collapse:collapse; color:black;}
+TH{border-width:1px; padding:5px; border-style:solid; border-color:black; background-color:white; color:#12233D; font-family: "Segoe UI", Tahoma, Verdana, Arial, sans-serif;}
+TD{border-width:1px; padding:5px; border-style:solid; border-color:black; background-color:#FCEBDA; font-family:Arial;}
+titlesection{color:white; font-family: "Segoe UI", Tahoma, Verdana, Arial, sans-serif; font-size:32px; font-weight:bold;}
+datesection{color:white; font-family: "Segoe UI", Tahoma, Verdana, Arial, sans-serif;}
+</style>
+'@
+$functionRoot = Join-Path -Path $PSScriptRoot -ChildPath 'Functions' -Resolve
+Get-ChildItem -Path $functionRoot -Filter '*.ps1' | ForEach-Object {
+    . $_.FullName | Out-Null
+}
+IseSteroids/GithubGist/PaulStovell_10638996_raw_9ab5354b328dfef4675556455a89fd5cac012a99_gistfile1.ps1
+Script 456
+
+Import-Module WebAdministration
+${10000011110000010} = Get-WebAppPoolState $appPoolName
+if (${10000011110000010}.Value -eq "Stopped")
+{
+    Write-Host "Service is already stopped"
+}
+else
+{
+    Stop-WebAppPool $appPoolName
+    Write-Host "Application pool is stopped"
+}
+InvokeObfuscation/PoshCode/ConvertFrom-FahrenheitWi_2.ps1
+Script 546
+
+param([double] $Fahrenheit)
+
+Set-StrictMode -Version Latest
+
+function ConvertFahrenheitToCelsius([double] $fahrenheit)
+{
+    $celsius = $fahrenheit - 32
+    $celsius = $celsius / 1.8
+    $celsius
+}
+
+$celsius = ConvertFahrenheitToCelsius $fahrenheit
+
+"$fahrenheit degrees Fahrenheit is $celsius degrees Celsius."
+
+InvokeObfuscation/GithubGist/healeyio_fac1ba9672a1807b6104_raw_7d57d20d7ebfd497ab6dfd22744202d66b811942_Set-LyncNoteWithTwitter.ps1
+Script 724
+
+
+[string]$Consumer_Key =        'abcdefghijklmnopqrstuvwxyz'
+[string]$Consumer_Secret =     'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz'
+[string]$Access_Token =        'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz'
+[string]$Access_Token_Secret = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrst'
+[string]$screen_name =         'SwiftOnSecurity'
+[int]   $count =                1
+[string]$exclude_replies =     'true'
+[string]$include_rts =         'false'
+[string]$HttpEndPoint =        'https://api.twitter.com/1.1/statuses/user_timeline.json'
+
+[Reflection.Assembly]::LoadWithPartialName("System.Security") | Out-Null
+[Reflection.Assembly]::LoadWithPartialName("System.Net") | Out-Null
+
+$OauthNonce = [System.Convert]::ToBase64String(([System.Text.Encoding]::ASCII.GetBytes("$([System.DateTime]::Now.Ticks.ToString())12345"))).Replace('=', 'g')
+Write-Verbose "Generated Oauth none string '$OauthNonce'"
+			
+$EpochTimeNow = [System.DateTime]::UtcNow - [System.DateTime]::ParseExact("01/01/1970", "dd/MM/yyyy", $null)
+Write-Verbose "Generated epoch time '$EpochTimeNow'"
+$OauthTimestamp = [System.Convert]::ToInt64($EpochTimeNow.TotalSeconds).ToString();
+Write-Verbose "Generated Oauth timestamp '$OauthTimestamp'"
+			
+$SignatureBase = "$([System.Uri]::EscapeDataString($HttpEndPoint))&"
+$SignatureParams = @{
+	'oauth_consumer_key' =     $Consumer_Key;
+	'oauth_nonce' =            $OauthNonce;
+	'oauth_signature_method' = 'HMAC-SHA1';
+	'oauth_timestamp' =        $OauthTimestamp;
+	'oauth_token' =            $Access_Token;
+	'oauth_version' =          '1.0';
+}
+
+$SignatureParams.screen_name =     $screen_name
+$SignatureParams.exclude_replies = $exclude_replies
+$SignatureParams.include_rts =     $include_rts
+$SignatureParams.count =           $count
+			
+$SignatureParams.GetEnumerator() | sort name | foreach { 
+    Write-Verbose "Adding '$([System.Uri]::EscapeDataString(`"$($_.Key)=$($_.Value)&`"))' to signature string"
+    $SignatureBase += [System.Uri]::EscapeDataString("$($_.Key)=$($_.Value)&".Replace(',','%2C').Replace('!','%21'))
+}
+$SignatureBase = $SignatureBase.TrimEnd('%26')
+$SignatureBase = 'GET&' + $SignatureBase
+Write-Verbose "Base signature generated '$SignatureBase'"
+			
+$SignatureKey = [System.Uri]::EscapeDataString($Consumer_Secret) + "&" + [System.Uri]::EscapeDataString($Access_Token_Secret);
+			
+$hmacsha1 = new-object SySTem.sEcuRitY.CrYpTogRaPhy.hmACsha1;
+$hmacsha1.Key = [System.Text.Encoding]::ASCII.GetBytes($SignatureKey);
+$OauthSignature = [System.Convert]::ToBase64String($hmacsha1.ComputeHash([System.Text.Encoding]::ASCII.GetBytes($SignatureBase)));
+Write-Verbose "Using signature '$OauthSignature'"
+			
+$AuthorizationParams = $SignatureParams
+$AuthorizationParams.Add('oauth_signature', $OauthSignature)
+			
+$AuthorizationParams.Remove('exclude_replies')
+$AuthorizationParams.Remove('include_rts')
+$AuthorizationParams.Remove('screen_name')
+$AuthorizationParams.Remove('count')
+			
+$AuthorizationString = 'OAuth '
+$AuthorizationParams.GetEnumerator() | sort naMe | foreach { $AuthorizationString += $_.Key + '="' + [System.Uri]::EscapeDataString($_.Value) + '",' }
+$AuthorizationString = $AuthorizationString.TrimEnd(',')
+Write-Verbose "Using authorization string '$AuthorizationString'"
+
+$URIBody = "?count=$count&exclude_replies=$exclude_replies&include_rts=$include_rts&screen_name=$screen_name"
+Write-Verbose "Using GET URI: $($HttpEndPoint + $Body)"
+$tweet = Invoke-RestMethod -URI $($HttpEndPoint + $URIBody) -Method get -Headers @{ 'Authorization' = $AuthorizationString } -ContentType "application/x-www-form-urlencoded"
+
+$lyncSDKPath = "Microsoft Office\Office15\LyncSDK\Assemblies\Desktop\Microsoft.Lync.Model.dll"
+$lyncSDKError = "Lync 2013 SDK is required. Download here and install: http://www.microsoft.com/en-us/download/details.aspx?id=36824"
+
+if (-not (Get-Module -Name MicrOsOFT.lYnC.MOdEL)) {
+    if (Test-Path (Join-Path -Path ${env:ProgramFiles(x86)} -ChildPath $lyncSDKPath)) {
+        $lyncPath = Join-Path -Path ${env:ProgramFiles(x86)} -ChildPath $lyncSDKPath
+    }
+    elseif (Test-Path (Join-Path -Path ${env:Prog
+InvokeObfuscation/GithubGist/Gethe_7617988_raw_99a8d36128f82bc80d2102145c8e8df69a22bae3_wow%20patch.ps1
+Script 727
+
+$mode = "ptr"
+$locale = "enUS"
+
+
+[int]$build = Read-Host "What build do you want to start at?"  #17595
+
+if ($mode -eq "live") {
+    $basicURL = "http://ak.worldofwarcraft.com.edgesuite.net/wow-pod-retail/NA/15890.direct"
+} elseif ($mode -eq "ptr") {
+    $basicURL = "http://ak.worldofwarcraft.com.edgesuite.net/wow-pod/public-test/15890.direct"
+} elseif ($mode -eq "beta") {
+    $basicURL = "http://ak.worldofwarcraft.com.edgesuite.net/wow-pod/beta/0E1FFF21/NA/15050.direct"
+}
+
+function dOWnloa`D`File($url, $targetFile) {
+    $url = $basicURL + $url
+    $uri = New-Object "System.Uri" "$url"
+    $request = [System.Net.HttpWebRequest]::Create($uri)
+    $request.set_Timeout(15000) #15 second timeout
+    $response = $request.GetResponse()
+    $totalLength = [System.Math]::Floor($response.get_ContentLength()/1024)
+    $responseStream = $response.GetResponseStream()
+    $targetStream = New-Object -TypeName ('Sys'+'te'+'m.'+'IO.F'+'ileStrea'+'m') -ArgumentList $targetFile, ('Cr'+'e'+'ate')
+    $buffer = new-object ('byte['+']') 10KB
+    $count = $responseStream.Read($buffer,0,$buffer.length)
+    $downloadedBytes = $count
+
+    while ($count -gt 0) {
+        $targetStream.Write($buffer, 0, $count)
+        $count = $responseStream.Read($buffer,0,$buffer.length)
+        $downloadedBytes = $downloadedBytes + $count
+        Write-Progress -activity "Downloading file '$($url.split('/') | Select -Last 1)'" -status "Downloaded ($([System.Math]::Floor($downloadedBytes/1024))K of $($totalLength)K): " -PercentComplete ((([System.Math]::Floor($downloadedBytes/1024)) / $totalLength)  * 100)
+    }
+
+    Write-Progress -activity "Finished downloading file '$($url.split('/') | Select -Last 1)'"
+    $targetStream.Flush()
+    $targetStream.Close()
+    $targetStream.Dispose()
+    $responseStream.Dispose()
+}
+
+function teS`Tp`ATh($url) {
+    $url = $basicURL + $url
+
+    "---------Test-Path------------"
+    $test = $url
+    $req = [system.Net.WebRequest]::Create($test)
+    try {
+        $res = $req.GetResponse()
+    } catch [System.Net.WebException] {
+        $res = $_.Exception.Response
+    }
+    $res.StatusCode
+    [int]$res.StatusCode
+}
+
+do {
+    $build++
+    $build
+
+    $i++
+    $i
+
+    $data = "/Data/wow-update-base-" + $build + ".MPQ"
+    $dataLocale = "/Data/" + $locale + "/wow-update-" + $locale + "-" + $build + ".MPQ"
+    $updates = "/Updates/wow-0-" + $build + "-Win-final.MPQ"
+
+    $status = testPath($data)
+
+    if ($status -eq "OK") {
+        "This is it!"
+        DownloadFile $data "$pwd$data"
+        DownloadFile $dataLocale "$pwd$dataLocale"
+        DownloadFile $updates "$pwd$updates"
+    }
+}
+until (($status -eq "OK") -or ($i -eq 200))
+
+"Press any key to continue ..."
+$x = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+
+
+
+
+InvokeObfuscation/Technet/I-3-import-Groups.ps1
+Script 766
+
+$OldDomain = 'dc=yourco,dc=com'
+$NewDomain = 'dc=yourtest,dc=local'
+$incsv = 'E:\Data\ADexport\groupt.csv'
+$oops = 0
+$good = 0
+
+$grouplist = import-csv $incsv 
+$grouplist |foreach { 
+    $_.Distinguishedname = $_.Distinguishedname -replace , $OldDomain, $NewDomain
+
+    $Path = $_.Distinguishedname -split ',',2
+    $tName = $_.Name
+    Write-Host "Creating: "$tNAme
+    try {    
+        $newgroup = $_|New-ADgroup -Path $Path[1] -EA stOP
+        Write-Host "Created: "$tNAmE
+        $good++
+    }
+    Catch {
+        Write-host "Error creating group: "$TnAMe
+        $oops++
+     }
+     Finally {
+            echo ""
+     }
+}
+Write-host "Imported "$gOod groUpS wiTH $OOpS ErRORs
+InvokeObfuscation/Technet/Desktop_Management_tool.ps1
+Script 770
+
+$ShellApp = new-Object -ComObject S`hEll.aPpLI`caT`iON
+Add-Type -AssemblyName prESEnTaT`Io`NFRaM`e`W`ork
+
+
+[xml]$xaml = @"
+
+<Window 
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Gobind | Mini Desktop Tool | v.1 " Height="150" Width="374" Background="#FFC8C600" >
+    <Grid>
+        <Button Content="Desktop" Height="23" HorizontalAlignment="Left" Name="button1" VerticalAlignment="Top" Width="75" Margin="12,12,0,0" />
+        <Button Content="Drives" Height="23" HorizontalAlignment="Left" Margin="93,12,0,0" Name="button2" VerticalAlignment="Top" Width="75" />
+        <Button Content="C.panel" Height="23" HorizontalAlignment="Left" Margin="174,12,0,0" Name="button3" VerticalAlignment="Top" Width="75" />
+        <Button Content="Favorites" Height="23" HorizontalAlignment="Left" Margin="255,12,0,0" Name="button4" VerticalAlignment="Top" Width="75" />
+        <Button Content="Printers" Height="23" HorizontalAlignment="Left" Margin="12,41,0,0" Name="button5" VerticalAlignment="Top" Width="75" />
+        <Button Content="History" Height="23" HorizontalAlignment="Left" Margin="93,41,0,0" Name="button6" VerticalAlignment="Top" Width="75" />
+        <Button Content="Network Conn" Height="23" HorizontalAlignment="Left" Margin="174,41,0,0" Name="button7" VerticalAlignment="Top" Width="75" />
+        <Button Content="Recent" Height="23" HorizontalAlignment="Left" Margin="255,41,0,0" Name="button8" VerticalAlignment="Top" Width="75" />
+        <Button Content="prog. files" Height="23" HorizontalAlignment="Left" Margin="12,70,0,0" Name="button9" VerticalAlignment="Top" Width="75" />
+        <Button Content="Local App" Height="23" HorizontalAlignment="Left" Margin="93,70,0,0" Name="button10" VerticalAlignment="Top" Width="75" />
+        <Button Content="Start-Up" Height="23" HorizontalAlignment="Left" Margin="174,70,0,0" Name="button11" VerticalAlignment="Top" Width="75" />
+
+    </Grid>
+</Window>
+
+"@
+
+$reader = (New-Object sySt`EM.`XMl.XmlNo`DE`R`eAdeR $xaml)
+$d = [Windows.Markup.XamlReader]::Load($reader) 
+
+	$desktop = $d.FindName("button1")
+	$desktop.add_Click({ $ShellApp.Explore(0x00) })
+	
+	$drives = $d.FindName("button2")
+	$drives.add_Click({ $ShellApp.Explore(0x11) })
+
+	$cPanel = $d.FindName("button3")
+	$cpanel.add_Click({ $ShellApp.Explore(0x03) })
+
+	$fav = $d.FindName("button4")
+	$fav.add_Click({ $ShellApp.Explore(0x06) })
+
+	$printer = $d.FindName("button5")
+	$printer.add_click({ $ShellApp.Explore(0x04) })
+
+
+   $history = $d.FindName("button6")
+   $history.add_click({ $ShellApp.Explore(0x22) })
+
+	$network = $d.FindName("button7")
+	$network.add_click({ ncpa.cpl })
+	
+	$recent = $d.FindName("button8")
+	$recent.add_click({ $ShellApp.Explore(0x08 ) })
+
+
+	$nethood = $d.FindName("button9")
+	$nethood.add_click({ $ShellApp.Explore(0x26) })
+
+
+	$localapp = $d.FindName("button10")
+	$localapp.add_click({ $ShellApp.Explore(0x1c) })
+
+	$startup = $d.FindName("button11")
+	$startup.add_click({ $ShellApp.Explore(0x07) })
+	
+	
+	
+	
+
+$d.ShowDialog() | Out-Null
+
+
+
+
+
+
+
+
+InvokeObfuscation/PowerShellGallery/Winformal/1.0/GeneratedControls/System.Windows.Forms.ps1
+Script 852
+function New-Control {
+    
+
+    
+    
+    param(
+        
+    [System.String]
+    ${AccessibleDefaultActionDescription},
+
+    [System.String]
+    ${AccessibleDescription},
+
+    [System.String]
+    ${AccessibleName},
+
+    [System.Windows.Forms.AccessibleRole]
+    ${AccessibleRole},
+
+    [Switch]
+    ${AllowDrop},
+
+    [System.Windows.Forms.AnchorStyles]
+    ${Anchor},
+
+    [Switch]
+    ${AutoSize},
+
+    ${AutoScrollOffset},
+
+    ${BackColor},
+
+    ${BackgroundImage},
+
+    [System.Windows.Forms.ImageLayout]
+    ${BackgroundImageLayout},
+
+    ${BindingContext},
+
+    ${Bounds},
+
+    [Switch]
+    ${Capture},
+
+    [Switch]
+    ${CausesValidation},
+
+    ${ClientSize},
+
+    ${ContextMenu},
+
+    ${ContextMenuStrip},
+
+    ${Controls},
+
+    ${Cursor},
+
+    [System.Windows.Forms.DockStyle]
+    ${Dock},
+
+    [Switch]
+    ${Enabled},
+
+    ${Font},
+
+    ${ForeColor},
+
+    [System.Int32]
+    ${Height},
+
+    [Switch]
+    ${IsAccessible},
+
+    [System.Int32]
+    ${Left},
+
+    ${Location},
+
+    ${Margin},
+
+    ${MaximumSize},
+
+    ${MinimumSize},
+
+    [System.String]
+    ${Name},
+
+    ${Parent},
+
+    ${Region},
+
+    [System.Windows.Forms.RightToLeft]
+    ${RightToLeft},
+
+    ${Site},
+
+    ${Size},
+
+    [System.Int32]
+    ${TabIndex},
+
+    [Switch]
+    ${TabStop},
+
+    ${Tag},
+
+    [System.String]
+    ${Text},
+
+    [System.Int32]
+    ${Top},
+
+    [Switch]
+    ${UseWaitCursor},
+
+    [Switch]
+    ${Visible},
+
+    [System.Int32]
+    ${Width},
+
+    ${WindowTarget},
+
+    ${Padding},
+
+    [System.Windows.Forms.ImeMode]
+    ${ImeMode},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_AutoSizeChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_BackColorChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_BackgroundImageChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_BackgroundImageLayoutChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_BindingContextChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_CausesValidationChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_ClientSizeChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_ContextMenuChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_ContextMenuStripChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_CursorChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_DockChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_EnabledChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_FontChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_ForeColorChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_LocationChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_MarginChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_RegionChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_RightToLeftChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_SizeChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_TabIndexChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_TabStopChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_TextChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_VisibleChanged},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_Click},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_ControlAdded},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_ControlRemoved},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_DragDrop},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_DragEnter},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_DragOver},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_DragLeave},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_GiveFeedback},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_HandleCreated},
+
+    [System.Management.Automation.ScriptBlock[]]
+    ${On_HandleDestroyed},
+
+    [System.Management.Automation.Sc
+InvokeObfuscation/Github/Microsoft_MIMPowerShellConnectors/src/LyncConnector/Scripts/TestHarness.Common.psm1
+Script 865
+
+&('Set-Stric'+'t'+'Mode') -Version "2.0"
+
+function ConvertTo-RunProfileAuditFile
+{
+	[CmdletBinding()]
+	param(
+		[parameter(Mandatory = $true)]
+		[Microsoft.MetadirectoryServices.GetImportEntriesResults]
+		$GetImportEntriesResults,
+		[parameter(Mandatory = $true)]
+		[Microsoft.MetadirectoryServices.Schema]
+		$Schema,
+		[parameter(Mandatory = $true)]
+		[string]
+		$AuditFileName,
+		[parameter(Mandatory = $true)]
+		[ValidateSet("full-import", "delta-import", "export")]
+		[string]
+		$RunProfileStepType
+	)
+
+	process
+	{
+		$RunProfileStepType = $RunProfileStepType.ToLowerInvariant()
+		$namespaceUri = "http://www.microsoft.com/mms/mmsml/v2"
+		$document = [xml] "<mmsml xmlns=`"$namespaceUri`" step-type=`"$RunProfileStepType`"><directory-entries/></mmsml>"
+		[System.Xml.XmlNamespaceManager] $nsm = $document.NameTable
+		$nsm.AddNamespace("x", $namespaceUri)
+		$directoryEntries = $document.SelectSingleNode("//x:directory-entries", $nsm)
+
+		foreach ($csentry in $GetImportEntriesResults.CSEntries)
+		{
+			$type = $Schema.Types[$csentry.ObjectType]
+
+			$directoryEntry = $document.CreateElement("delta", $namespaceUri)
+			[void]$directoryEntries.AppendChild($directoryEntry)
+
+
+			$directoryEntryAttribute = $document.CreateAttribute("operation")
+			$directoryEntryAttribute.Value = ([string]$csentry.ObjectModificationType).ToLowerInvariant()
+			[void]$directoryEntry.Attributes.Append($directoryEntryAttribute)
+
+			$directoryEntryAttribute = $document.CreateAttribute("dn")
+			$directoryEntryAttribute.Value = $csentry.DN
+			[void]$directoryEntry.Attributes.Append($directoryEntryAttribute)
+
+
+
+			$directoryEntryAnchor = $document.CreateElement("anchor", $namespaceUri)
+			[void]$directoryEntry.AppendChild($directoryEntryAnchor)
+
+			$anchorAttributeValue = ""
+			$binaryAnchor = $false
+			foreach ($attribute in $csentry.AnchorAttributes)
+			{
+				$anchorAttributeValue += 
+					switch ($type.Attributes[$attribute.Name].DataType)
+					{
+							"Binary"
+							{
+								$anchor = @(16,0,0,0) + $attribute.Value # seems to be the case how anchor is encoded
+								[Convert]::ToBase64String($anchor)
+								$binaryAnchor = $true
+							}
+
+							default
+							{
+								$attribute.Value + "+"
+							}
+					}
+			}
+			
+			$directoryEntryAnchor.InnerText = $anchorAttributeValue.TrimEnd("+")
+
+			if ($binaryAnchor)
+			{
+				$directoryEntryAnchorEncoding = $document.CreateAttribute("encoding")
+				$directoryEntryAnchorEncoding.Value = "base64"
+				[void]$directoryEntryAnchor.Attributes.Append($directoryEntryAnchorEncoding)
+			}
+
+
+
+			$directoryEntryObjectClass = $document.CreateElement("primary-objectclass", $namespaceUri)
+			[void]$directoryEntry.AppendChild($directoryEntryObjectClass)
+			$directoryEntryObjectClass.InnerText = $csentry.ObjectType
+
+			$directoryEntryObjectClass = $document.CreateElement("objectclass", $namespaceUri)
+			[void]$directoryEntry.AppendChild($directoryEntryObjectClass)
+			$directoryEntryObjectClassValue = $document.CreateElement("oc-value", $namespaceUri)
+			[void]$directoryEntryObjectClass.AppendChild($directoryEntryObjectClassValue)
+			$directoryEntryObjectClassValue.InnerText = $csentry.ObjectType
+
+
+
+			foreach ($attribute in $csentry.AttributeChanges)
+			{
+				$directoryEntryAttribute = $document.CreateElement("attr", $namespaceUri)
+				[void]$directoryEntry.AppendChild($directoryEntryAttribute)
+
+				$directoryEntryAttributeName = $document.CreateAttribute("name")
+				[void]$directoryEntryAttribute.Attributes.Append($directoryEntryAttributeName)
+				$directoryEntryAttributeName.Value = $attribute.Name
+
+				if ($RunProfileStepType -ne "full-import" -and $csentry.ObjectModificationType -ne "Add")
+				{
+					$directoryEntryAttributeOperation = $document.CreateAttribute("operation")
+					[void]$directoryEntryAttribute.Attributes.Append($directoryEntryAttributeOperation)
+					$directoryEntryAttributeOperation.Value = ([string]$attribute.ModificationType).ToLowerInvariant()
+				}
+
+				$directoryEntryAttributeType = $document.CreateAttribute("type")
+				[void]$directoryEntryAttribute.Attributes.Append($directoryEntryAttributeType)
+				$
+InvokeObfuscation/PoshCode/CreateVDS_1.ps1
+Script 872
+function CreateVDS(
+   $vdsName, $datacenter, $vmHost, $physicalNic, $portGroupType = ("{2}{1}{0}"-f'ding','n','earlyBi'), `
+   [array]$portGroupNameList = @(),[array]$uplinkList = @() ) {
+   
+
+   $vdsCreateSpec = New-Object VMware.Vim.DVSCreateSpec
+   $vdsCreateSpec.configSpec = New-Object VMware.Vim.DVSConfigSpec
+   $vdsCreateSpec.configSpec.name = $vdsName
+   $vdsCreateSpec.configSpec.uplinkPortPolicy = 
+      New-Object VMware.Vim.DVSNameArrayUplinkPortPolicy
+   if ($uplinkList.Count -eq 0) {
+      $vdsCreateSpec.configSpec.uplinkPortPolicy.uplinkPortName = 
+         New-Object System.String[] (2)
+      $vdsCreateSpec.configSpec.uplinkPortPolicy.uplinkPortName[0] = ("{0}{2}{1}"-f'dvUpl','k1','in')
+      $vdsCreateSpec.configSpec.uplinkPortPolicy.uplinkPortName[1] = ("{1}{0}"-f'plink2','dvU')
+   } else {
+      $vdsCreateSpec.configSpec.uplinkPortPolicy.uplinkPortName = 
+         New-Object System.String[] ($uplinkList.Count)
+      for ($i = 0; $i -lt $uplinkList.Count; $i++){
+         $vdsCreateSpec.configSpec.uplinkPortPolicy.uplinkPortName[$i] = 
+            $uplinkList[$i]
+      }
+   }
+   
+   $hostIdValue = ($vmHost.Id.Split('-', 2))[1]
+
+   $vdsCreateSpec.configSpec.host = 
+      New-Object VMware.Vim.DistributedVirtualSwitchHostMemberConfigSpec[] (1)
+   $vdsCreateSpec.configSpec.host[0] = 
+      New-Object VMware.Vim.DistributedVirtualSwitchHostMemberConfigSpec
+   $vdsCreateSpec.configSpec.host[0].operation = "add"
+   $vdsCreateSpec.configSpec.host[0].host = 
+      New-Object VMware.Vim.ManagedObjectReference
+   $vdsCreateSpec.configSpec.host[0].host.type = ("{2}{0}{1}" -f't','System','Hos')
+   $vdsCreateSpec.configSpec.host[0].host.value = $hostIdValue
+   $vdsCreateSpec.configSpec.host[0].backing = 
+      New-Object VMware.Vim.DistributedVirtualSwitchHostMemberPnicBacking
+
+   $vdsCreateSpec.configSpec.host[0].backing = 
+      New-Object VMware.Vim.DistributedVirtualSwitchHostMemberPnicBacking
+   $vdsCreateSpec.configSpec.host[0].backing.pnicSpec = 
+      New-Object VMware.Vim.DistributedVirtualSwitchHostMemberPnicSpec[] (1)
+   $vdsCreateSpec.configSpec.host[0].backing.pnicSpec[0] = 
+      New-Object VMware.Vim.DistributedVirtualSwitchHostMemberPnicSpec
+   $vdsCreateSpec.configSpec.host[0].backing.pnicSpec[0].pnicDevice = 
+      $physicalNic.DeviceName
+
+   $networkFolderView = Get-View -Id (($datacenter | Get-View).NetworkFolder)
+   
+
+   $dvsMoRef = $networkFolderView.CreateDVS($vdsCreateSpec)
+
+   
+   if ($portGroupNameList.Count -eq 0){
+      $portGroupNameList += ("{2}{0}{1}"-f 'ou','p','dvPortGr')
+   }
+
+   $vdProtGroupSpec = 
+      New-Object VMware.Vim.DVPortgroupConfigSpec[] ($portGroupNameList.Length)
+   for ($i = 0; $i -lt $portGroupNameList.Length; $i++){
+      $vdProtGroupSpec[$i] = New-Object VMware.Vim.DVPortgroupConfigSpec
+      $vdProtGroupSpec[$i].name = $portGroupNameList[$i]
+      $vdProtGroupSpec[$i].numPorts = 128
+      $vdProtGroupSpec[$i].defaultPortConfig = 
+         New-Object VMware.Vim.VMwareDVSPortSetting
+      $vdProtGroupSpec[$i].defaultPortConfig.vlan = 
+         New-Object VMware.Vim.VmwareDistributedVirtualSwitchVlanIdSpec
+      $vdProtGroupSpec[$i].defaultPortConfig.vlan.inherited = $false
+      $vdProtGroupSpec[$i].defaultPortConfig.vlan.vlanId = 0
+      $vdProtGroupSpec[$i].type = $portGroupType
+   }
+
+   $vdsView = Get-View -Id $vdsMoRef.ToString()
+
+   $vdsView.AddDVPortgroup($vdProtGroupSpec)
+
+   return $vdsMoRef
+}
+
+
+InvokeObfuscation/Github/MrGreenGiantGraphics_Epi-PostOak/Landrys.ThePostOak_EpiServer/packages/EPiServer.Packaging.3.2.3/tools/Modules/Init.psm1
+Script 954
+Import-Module "$EPiServerPackagingScripts\Move-EPiServerProtectedModules.psm1"
+Import-Module "$EPiServerPackagingScripts\Convert-EPiAddons.psm1"
+
+
+Export-ModuleMember -Function Move-EPiServerProtectedModules, VerifyProtectedModulePath, Convert-EPiAddons
+
+InvokeObfuscation/Github/singlestone_Vagrant_DSC_CHEF_Example/GENIISUAT_DSC/modules/dsc_modules/xExchange/Examples/HelperScripts/ExchangeConfigHelper.psm1
+Script 975
+function DBMapFromServersCsv
+{
+    param([string]$ServersCsvPath, [string]$ServerNameInCsv, [Hashtable]$DbNameReplacements = @{})
+
+    [string[]]$dbMapOut = @()
+
+    if ((Test-Path -LiteralPath "$($ServersCsvPath)") -eq $true)
+    {
+        $serversCsv = Import-Csv -LiteralPath "$($ServersCsvPath)"
+
+        $foundServer = $false
+
+        for ($i = 0; $i -lt $serversCsv.cOunT -and $foundServer -eq $false; $i++)
+        {           
+            if ($serversCsv[$i].SERvErnamE -like $ServerNameInCsv)
+            {
+                $foundServer = $true
+
+                $dbPerVolume = $serversCsv[$i].dBPERVoLUMe
+
+                if ($dbPerVolume -eq 0)
+                {
+                    throw "DbPerVolume for server '$($ServerNameInCsv)'is 0"
+                }
+
+                $dbMapIn = $serversCsv[$i].DBMAP.spLIt(',')
+
+                if ($dbMapIn.cOunT -gt 0)
+                {
+                    for ($j = 0; $j -lt $dbMapIn.COuNT; $j += $dbPerVolume)
+                    {
+                        [string]$currentDisk = ""
+
+                        for ($k = $j; $k -lt $j + $dbPerVolume; $k++)
+                        {
+                            if ($k -gt $j)
+                            {
+                                $currentDisk += ","
+                            }
+
+                            $currentDb = StringReplaceFromHashtable -StringIn $dbMapIn[$k] -Replacements $DbNameReplacements
+
+                            $currentDisk += $currentDb
+                        }
+
+                        $dbMapOut += $currentDisk
+                    }
+                }
+                else
+                {
+                    throw "No databases found in DbMap for server '$($ServerNameInCsv)' in file: $($ServersCsvPath)"
+                }
+            }
+        }
+
+        if ($foundServer -eq $false)
+        {
+            throw "Unable to find server '$($ServerNameInCsv)' in file: $($ServersCsvPath)"
+        }
+    }
+    else
+    {
+        throw "Unable to access file at path: $($ServersCsvPath)"
+    }
+
+    return $dbMapOut
+}
+
+function DBListFromMailboxDatabasesCsv
+{
+    param([string]$MailboxDatabasesCsvPath, [string]$ServerNameInCsv, [Hashtable]$DbNameReplacements = @{})
+
+    [Array]$dbList = @()
+
+    if ((Test-Path -LiteralPath "$($MailboxDatabasesCsvPath)") -eq $true)
+    {
+        $databasesCsv = Import-Csv -LiteralPath "$($MailboxDatabasesCsvPath)"
+
+        for ($i = 0; $i -lt $databasesCsv.cOUNt; $i++)
+        {
+            if ($databasesCsv[$i].serVer -like $ServerNameInCsv)
+            {
+                $dbIn = $databasesCsv[$i]
+
+                $currentDb = New-Object PSObject
+
+                $currentDb | Add-Member NoteProperty Name (StringReplaceFromHashtable -StringIn $dbIn.nAme -Replacements $DbNameReplacements)
+                $currentDb | Add-Member NoteProperty DBFilePath (StringReplaceFromHashtable -StringIn $dbIn.DBFILEpATH -Replacements $DbNameReplacements)
+                $currentDb | Add-Member NoteProperty LogFolderPath (StringReplaceFromHashtable -StringIn $dbIn.lOgfOLderPath -Replacements $DbNameReplacements)
+                $currentDb | Add-Member NoteProperty DeletedItemRetention $dbIn.DEletEDITEmRetEnTion
+                $currentDb | Add-Member NoteProperty GC $dbIn.gc
+                $currentDb | Add-Member NoteProperty OAB $dbIn.Oab
+                $currentDb | Add-Member NoteProperty RetainDeletedItemsUntilBackup $dbIn.retaINDelEtediTeMsUNtilBaCKUP
+                $currentDb | Add-Member NoteProperty IndexEnabled $dbIn.iNDExeNabLeD
+                $currentDb | Add-Member NoteProperty CircularLoggingEnabled $dbIn.cIRcuLarlOgGiNgEnaBLeD
+                $currentDb | Add-Member NoteProperty ProhibitSendReceiveQuota $dbIn.prOHiBITsenDReCEiVEquoTA
+                $currentDb | Add-Member NoteProperty ProhibitSendQuota $dbIn.proHiBITsENDqUOta
+                $currentDb | Add-Member NoteProperty IssueWarningQuota $dbIn.iSsueWArningQUoTA
+                $currentDb | Add-Member NoteProperty AllowFileRestore $dbIn.ALLoWfIlereStoRe
+                $currentDb | Add-Member NoteProperty BackgroundDatabaseMaintenan
+InvokeObfuscation/PowerShellGallery/ps-AzureFaceAPI/1.0.1/Functions/Get-Secrets.ps1
+Script 981
+function Get-Secrets {
+    WRIte`-ho`sT "ApiKey: " $Script:ApiKey
+}
+InvokeObfuscation/Github/lanwin_log4net.NLogAppender/Packages/PSake/psake.psm1
+Script 1050
+
+
+
+function iNvO`Ke-TA`SK
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Position=0,Mandatory=1)] [string]$taskName
+    )
+
+    Assert $taskName ($msgs.error_invalid_task_name)
+
+    $taskKey = $taskName.ToLower()
+
+    if ($currentContext.aliases.Contains($taskKey)) {
+        $taskName = $currentContext.aliases.$taskKey.Name
+        $taskKey = $taskName.ToLower()
+    }
+
+    $currentContext = $psake.context.Peek()
+
+    Assert ($currentContext.tasks.Contains($taskKey)) ($msgs.error_task_name_does_not_exist -f $taskName)
+
+    if ($currentContext.executedTasks.Contains($taskKey))  { return }
+
+    Assert (!$currentContext.callStack.Contains($taskKey)) ($msgs.error_circular_reference -f $taskName)
+
+    $currentContext.callStack.Push($taskKey)
+
+    $task = $currentContext.tasks.$taskKey
+
+    $precondition_is_valid = & $task.Precondition
+
+    if (!$precondition_is_valid) {
+        WriteColoredOutput ($msgs.precondition_was_false -f $taskName) -foregroundcolor ("{1}{0}" -f 'an','Cy')
+    } else {
+        if ($taskKey -ne 'default') {
+
+            if ($task.PreAction -or $task.PostAction) {
+                Assert ($task.Action -ne $null) ($msgs.error_missing_action_parameter -f $taskName)
+            }
+
+            if ($task.Action) {
+                try {
+                    foreach($childTask in $task.DependsOn) {
+                        Invoke-Task $childTask
+                    }
+
+                    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+                    $currentContext.currentTaskName = $taskName
+
+                    & $currentContext.taskSetupScriptBlock
+
+                    if ($task.PreAction) {
+                        & $task.PreAction
+                    }
+
+                    if ($currentContext.config.taskNameFormat -is [ScriptBlock]) {
+                        & $currentContext.config.taskNameFormat $taskName
+                    } else {
+                        WriteColoredOutput ($currentContext.config.taskNameFormat -f $taskName) -foregroundcolor ("{0}{1}" -f'Cya','n')
+                    }
+
+                    foreach ($variable in $task.requiredVariables) {
+                        Assert ((test-path "variable:$variable") -and ((get-variable $variable).Value -ne $null)) ($msgs.required_variable_not_set -f $variable, $taskName)
+                    }
+
+                    & $task.Action
+
+                    if ($task.PostAction) {
+                        & $task.PostAction
+                    }
+
+                    & $currentContext.taskTearDownScriptBlock
+                    $task.Duration = $stopwatch.Elapsed
+                } catch {
+                    if ($task.ContinueOnError) {
+                        "-"*70
+                        WriteColoredOutput ($msgs.continue_on_error -f $taskName,$_) -foregroundcolor ("{0}{2}{1}"-f 'Y','llow','e')
+                        "-"*70
+                        $task.Duration = $stopwatch.Elapsed
+                    }  else {
+                        throw $_
+                    }
+                }
+            } else {
+                foreach($childTask in $task.DependsOn) {
+                    Invoke-Task $childTask
+                }
+            }
+        } else {
+            foreach($childTask in $task.DependsOn) {
+                Invoke-Task $childTask
+            }
+        }
+
+        Assert (& $task.Postcondition) ($msgs.postcondition_failed -f $taskName)
+    }
+
+    $poppedTaskKey = $currentContext.callStack.Pop()
+    Assert ($poppedTaskKey -eq $taskKey) ($msgs.error_corrupt_callstack -f $taskKey,$poppedTaskKey)
+
+    $currentContext.executedTasks.Push($taskKey)
+}
+
+function eX`EC
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Position=0,Mandatory=1)][scriptblock]$cmd,
+        [Parameter(Position=1,Mandatory=0)][string]$errorMessage = ($msgs.error_bad_command -f $cmd),
+        [Parameter(Position=2,Mandatory=0)][int]$maxRetries = 0,
+        [Parameter(Position=3,Mandatory=0)][string]$retryTriggerErrorPattern = $null
+    )
+
+    $tryCount = 1
+
+    do {
+        try {
+            $global:lastexitcode = 0
+            & $cmd
+            if ($lastexitcod
+InvokeObfuscation/Github/dtgm_chocolatey-packages/automatic/_output/mariadb/10.1.7/tools/Uninstall-ChocolateyPath.psm1
+Script 1182
+function uninsTall-CHocoLATeypaTH {
+param(
+  [string] $pathToUninstall,
+  [System.EnvironmentVariableTarget] $pathType = [System.EnvironmentVariableTarget]::User
+)
+  Write-Debug "Running 'Uninstall-ChocolateyPath' with pathToUninstall:`'$pathToUninstall`'";
+
+  $envPath = $env:PATH
+  if (!$envPath.ToLower().Contains($pathToUninstall.ToLower())) {
+    Write-Host "PATH environment variable does not have $pathToUninstall in it."
+    return
+  }
+
+  Write-Host "PATH environment variable has $pathToUninstall in it. Removing..."
+  $actualPath = [Environment]::GetEnvironmentVariable('Path', $pathType)
+
+  $pathToUninstallRegex = ($pathToUninstall -replace '([\\().])', '\$1') + '\\?(;|$)'
+
+  $actualPath = $actualPath -replace "$pathToUninstallRegex", ''
+
+  if ($pathType -eq [System.EnvironmentVariableTarget]::Machine) {
+    $psArgs = "[Environment]::SetEnvironmentVariable('Path',`'$actualPath`', `'$pathType`')"
+    Start-ChocolateyProcessAsAdmin "$psArgs"
+  } else {
+    [Environment]::SetEnvironmentVariable('Path', $actualPath, $pathType)
+  }
+
+  $envPSPath = $env:PATH
+  $env:Path = $envPSPath -replace "$pathToUninstallRegex", ''
+}
+InvokeObfuscation/PoshCode/Check HBA status .ps1
+Script 1200
+
+$VCServerName = "YOUR SERVER"
+
+
+$CLUSTERS = @()
+$portvc="443"
+
+
+$VC = Connect-VIServer $VCServerName -ErrorAction Stop -port $portvc
+
+$CLUSTERS = Get-Cluster | Select-Object Name
+
+ForEach ($ClusterName in $CLUSTERS)
+{
+
+	
+	$VMHosts = Get-VMHost -Location $ClusterName.name | Sort-Object Name
+
+	Function Generate-Report 
+	{
+		Write-Output "<body>"
+		ForEach ($VMHost in $VMHosts)
+		{
+			$Report = @()
+			$ESX = Get-VMHost $VMHost
+			get-vmhoststorage -RescanAllHba -VMHost $ESX > $null
+			$PROPVMHOST = Get-View $ESX.iD
+			$storageSystem = Get-View $PROPVMHOST.ConfIgMANagER.stOrAGESystEM
+			$VMHBAs = $PROPVMHOST.CONfig.sToRaGedEviCE.ScSiToPolOGY.ADapTeR
+			$lista = $storageSystem.stoRaGedevICeinFo.mULtipATHInFO.lun  
+			Write-Output "<table><tr class=""Title""><td colspan=""5"">$($VMhost.Name)</td></tr><tr class="Title"><td>LunID  </td><td>Vmhba  </td><td> WWN SAN </td><td>SCSI Target  </td><td>State  </td></tr>"
+			
+			ForEach ($lun in $lista)
+			{
+				$lun.patH | %{
+					if ($_.adAptER.conTAins("FibreChannelHba"))
+					{
+						$OUT = {} | Select Lunid, Vmhba, wwnt, target, state
+						$temp = $lun.ID.splIT(":")[2]
+						$OUT.LuNid = [Convert]::toDECiMAL($temp)
+						$OUT.vmHBA = $_.nAME.sPlit(":")[0]
+						$elenco = $storageSystem.sTORagEDeVICEInFO.hOstBUSAdApTEr | select Device, PortWorldWideName
+						ForEach ($ele in $elenco)
+						{
+							if ($ele.DevICe -eq $OUT.VmHBA)
+							{
+								break
+							}
+						}
+						$wwnhex = "{0:x}" -f $ele.PORTwOrLdwidenAme
+						$OUT.vMHba = $_.nAMe.SplIt(":")[0] + " " + $wwnhex
+						$OUT.wwnt = "{0:x}" -f $_.tranSpORt.portWOrLdWIDENAMe
+						$OUT.TArgET = $_.NaMe.splIt(":")[1]
+						$OUT.State = $_.PathsTAtE
+						$Report += $OUT
+					}
+				}
+			}
+			$Report = $Report | Sort-Object Lunid
+			$old = $Report[1].lUNid
+			$flag = $true
+			$bg="#C0C0FF"
+			Foreach ($rep in $Report) 
+			{
+			    if ($rep.LUNId -ne $old)
+				{
+					$flag = !($flag)
+					$old = $rep.luniD
+					if ($flag)
+					{
+						$bg="#C0C0FF"
+					}
+					else
+					{
+						$bg="#FFFF66"
+					}
+				}
+				if ($rep.State -like "dead")
+				{
+					Write-Output "<tr bgcolor=$($bg)><td>$($rep.Lunid)</td><td>$($rep.Vmhba)</td><td>$($rep.wwn)</td><td><center>$($rep.target)</center></td><td class="Error">$($rep.state)</td></tr>" 
+				}
+				else
+				{
+					Write-Output "<tr bgcolor=$($bg)><td>$($rep.Lunid)</td><td>$($rep.Vmhba)</td><td>$($rep.wwnt)</td><td><center>$($rep.target)</center></td><td>$($rep.state)</td></tr>" 
+				}
+			}
+			Write-Output "</table>"
+			Write-Output "<BR>"
+		}
+		Write-Output "</body></html>"
+	}
+	Write-Output "<html><head><title></title><style type=""text/css"">.Error {color:#FF0000;font-weight: bold;}.Title {background: #0077D4;color: #FFFFFF;text-align:center;font-weight: bold;}.Normal {}</style></head>" > "c:\\temp\\SAN_Path_$($ClusterName.Name).html"
+
+	
+	Generate-Report >> "c:\\temp\\SAN_Path_$($ClusterName.Name).html"
+}
+
+InvokeObfuscation/Github/jose-a-sa_oh-my-posh/Modules/oh-my-posh/2.0.111/Themes/Paradox.psm1
+Script 1202
+
+function Write-Theme {
+    param(
+        [bool]
+        $lastCommandFailed,
+        [string]
+        $with
+    )
+      
+    $lastColor = $sl.Colors.PromptBackgroundColor
+
+
+    If ($lastCommandFailed) {
+        Write-Prompt -Object "$($sl.PromptSymbols.FailedCommandSymbol)  " -ForegroundColor $sl.Colors.CommandFailedIconForegroundColor -BackgroundColor $sl.Colors.SessionInfoBackgroundColor
+    }
+
+    If (([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] ('Ad'+'m'+'inistrator'))) {
+        Write-Prompt -Object "$($sl.PromptSymbols.ElevatedSymbol)  " -ForegroundColor $sl.Colors.AdminIconForegroundColor -BackgroundColor $sl.Colors.SessionInfoBackgroundColor
+    }
+
+    $user = [Environment]::UserName
+    $computer = $env:computername
+    $path = Get-FullPath -dir $pwd
+    
+    Write-Prompt -Object ("$user@$computer "+'') -ForegroundColor $sl.Colors.SessionInfoForegroundColor -BackgroundColor $sl.Colors.SessionInfoBackgroundColor
+    
+    if (Test-VirtualEnv) {
+        Write-Prompt -Object "$($sl.PromptSymbols.SegmentForwardSymbol)  " -ForegroundColor $sl.Colors.SessionInfoBackgroundColor -BackgroundColor $sl.Colors.VirtualEnvBackgroundColor
+        Write-Prompt -Object "$($sl.PromptSymbols.VirtualEnvSymbol) $(Get-VirtualEnvName)  " -ForegroundColor $sl.Colors.VirtualEnvForegroundColor -BackgroundColor $sl.Colors.VirtualEnvBackgroundColor
+        Write-Prompt -Object "$($sl.PromptSymbols.SegmentForwardSymbol)  " -ForegroundColor $sl.Colors.VirtualEnvBackgroundColor -BackgroundColor $sl.Colors.PromptBackgroundColor
+    }
+    else {
+        Write-Prompt -Object "$($sl.PromptSymbols.SegmentForwardSymbol)  " -ForegroundColor $sl.Colors.SessionInfoBackgroundColor -BackgroundColor $sl.Colors.PromptBackgroundColor
+    }
+
+    Write-Prompt -Object ("$path "+'') -ForegroundColor $sl.Colors.PromptForegroundColor -BackgroundColor $sl.Colors.PromptBackgroundColor
+
+    $status = Get-VCSStatus
+    if ($status) {
+        $themeInfo = Get-VcsInfo -status ($status)
+        $lastColor = $themeInfo.BackgroundColor
+        Write-Prompt -Object $($sl.PromptSymbols.SegmentForwardSymbol) -ForegroundColor $sl.Colors.PromptBackgroundColor -BackgroundColor $lastColor
+        Write-Prompt -Object " $($themeInfo.VcInfo)  " -BackgroundColor $lastColor -ForegroundColor $sl.Colors.GitForegroundColor        
+    }
+
+    Write-Prompt -Object $sl.PromptSymbols.SegmentForwardSymbol -ForegroundColor $lastColor
+
+    $timeStamp = Get-Date -UFormat %r
+    $timestamp = "["+"$timeStamp".Trim()+ "]"
+
+    Set-CursorForRightBlockWrite -textLength $timestamp.Length
+
+    Write-Host $timeStamp -ForegroundColor $sl.Colors.PromptForegroundColor
+
+    if ($with) {
+        Write-Prompt -Object "$($with.ToUpper())  " -BackgroundColor $sl.Colors.WithBackgroundColor -ForegroundColor $sl.Colors.WithForegroundColor
+    }
+
+    Write-Prompt -Object $sl.PromptSymbols.PromptIndicator -ForegroundColor $sl.Colors.PromptBackgroundColor
+}
+
+$sl = $global:ThemeSettings #local settings
+$sl.PromptSymbols.StartSymbol = ' '
+$sl.PromptSymbols.PromptIndicator = [char]::ConvertFromUtf32(0x276F)
+$sl.PromptSymbols.SegmentForwardSymbol = [char]::ConvertFromUtf32(0xE0B0)
+$sl.Colors.PromptForegroundColor = [ConsoleColor]::White
+$sl.Colors.PromptSymbolColor = [ConsoleColor]::White
+$sl.Colors.PromptHighlightColor = [ConsoleColor]::DarkBlue
+$sl.Colors.GitForegroundColor = [ConsoleColor]::Black
+$sl.Colors.WithForegroundColor = [ConsoleColor]::DarkRed
+$sl.Colors.WithBackgroundColor = [ConsoleColor]::Magenta
+$sl.Colors.VirtualEnvBackgroundColor = [System.ConsoleColor]::Red
+$sl.Colors.VirtualEnvForegroundColor = [System.ConsoleColor]::White
+IseSteroids/Github/nutthaphon_powershell5/common/serverstat.ps1
+Script 1311
+Get-CimInstance -ClassName win32_operatingsystem | select csname, lastbootuptime
+Get-WmiObject Win32_logicaldisk -ComputerName LocalHost `
+| Format-Table DeviceID, MediaType, `
+@{Name="Size(GB)";Expression={[decimal]("{0:N0}" -f($_.size/1gb))}}, `
+@{Name="Free Space(GB)";Expression={[decimal]("{0:N0}" -f($_.freespace/1gb))}}, `
+@{Name="Free (%)";Expression={"{0,6:P0}" -f(($_.freespace/1gb) / ($_.size/1gb))}} `
+-AutoSize
+InvokeObfuscation/Github/gpduck_ActiveMQ/ActiveMQ/ActiveMQ.psm1
+Script 1423
+function sEn`D-Am`qmeS`sAGe {
+	param(
+		[Parameter(Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[string]$ComputerName,
+		
+		[Parameter(Mandatory=$true,ValueFromPipeline=$true)]
+		$InputObject,
+		
+		[Parameter(Mandatory=$true)]
+		[string]$DestinationName,
+		
+		[ValidateSet("Queue","Topic")]
+		[string]$DestinationType = "Queue",
+		
+		$Port = 61616,
+		
+		[Apache.NMS.MsgDeliveryMode]$DeliveryMode = [Apache.NMS.MsgDeliveryMode]::NonPersistent,
+		
+		[System.Collections.Hashtable]$Properties,
+		
+		[Int32]$Depth = 2
+	)
+	begin {
+		$Uri = [Uri]("activemq:tcp://{0}:{1}" -f $ComputerName, $Port)
+		$Factory = New-Object aPAc`hE.n`ms.NMs`c`OnN`EcT`ioNfactOry($Uri)
+		
+		$Connection = $Factory.CreateConnection()
+		$Session = $Connection.CreateSession()
+		
+		if($DestinationType -eq "Queue") {
+			$Destination = $Session.GetQueue($DestinationName)
+		} else {
+			$Destination = $Session.GetTopic($DestinationName)
+		}
+		$Producer = $Session.CreateProducer($Destination);
+		$Producer.DeliveryMode = $DeliveryMode
+		$Connection.Start()
+	}
+	process {
+		if($InputObject -is [String]) {
+			$Text = $InputObject
+			$MimeType = "text/plain"
+		} else {
+			$Text = [System.Management.Automation.PSSerializer]::Serialize($InputObject, $Depth)
+			$MimeType = "application/clixml+xml"
+		}
+		$Message = $Session.CreateTextMessage($Text)
+		$Message.Properties["Content-Type"] = $MimeType
+		if($Properties) {
+			$Properties.Keys | %{
+				$Message.Properties[$_] = $Properties[$_]
+			}
+		}
+		$Producer.Send($Message)
+	}
+	end {
+		$Connection.Stop()
+		$Producer.Dispose()
+		$Session.Dispose()
+		$Connection.Dispose()
+	}
+}
+
+function reC`EIve-Am`qme`sSage {
+	[CmdletBinding(DefaultParameterSetName="WithTimeout")]
+	param(
+		[Parameter(Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[string]$ComputerName,
+		
+		[Parameter(Mandatory=$true)]
+		[string]$DestinationName,
+		
+		[ValidateSet("Queue","Topic")]
+		[string]$DestinationType = "Queue",
+		
+		$Port = 61616,
+		
+		[Parameter(ParameterSetName="WithTimeout")]
+		[TimeSpan]$Timeout,
+		
+		[Parameter(ParameterSetName="NoWait")]
+		[switch]$NoWait,
+		
+		[switch]$Raw
+	)
+	$Uri = [Uri]("activemq:tcp://{0}:{1}" -f $ComputerName, $Port)
+	$Factory = New-Object aPaCHe.nms.`NMsConn`e`CtIo`NfacTO`Ry($Uri)
+	
+	$Connection = $Factory.CreateConnection()
+	$Session = $Connection.CreateSession()
+	if($DestinationType -eq "Queue") {
+		$Destination = $Session.GetQueue($DestinationName)
+	} else {
+		$Destination = $Session.GetTopic($DestinationName)
+	}
+	$Consumer = $Session.CreateConsumer($Destination);
+	$Connection.Start()
+	try {
+		if($PsCmdlet.ParameterSetName -eq "WithTimeout") {
+			$OneSecond = New-TimeSpan -Seconds 1
+			while(!$Message -and (!$Timeout -or $Timeout -gt 0)) {
+				if($Timeout) {
+					$Timeout = $Timeout.Subtract($OneSecond)
+				}
+				$Message = $Consumer.Receive($OneSecond)
+			}
+		} else {
+			$Message = $Consumer.ReceiveNoWait()
+		}
+		if($Message) {
+			if(!$Raw) {
+				if($Message.Properties["Content-Type"] -eq "application/clixml+xml") {
+					[System.Management.Automation.PSSerializer]::Deserialize($Message.Text)
+				} else {
+					$Message.Text
+				}
+			} else {
+				$Message
+			}
+		}
+	} finally {
+		$Consumer.DeliverAcks()
+		$Consumer.Close()
+		$Consumer.Dispose()
+		$Connection.Stop()
+		$Session.Dispose()
+		$Connection.Dispose()
+	}
+}
+
+function Wai`T-amq`meSsAGe {
+	[CmdletBinding(DefaultParameterSetName="WithTimeout")]
+	param(
+		[Parameter(Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[string]$ComputerName,
+		
+		[Parameter(Mandatory=$true)]
+		[string]$DestinationName,
+		
+		[ValidateSet("Queue","Topic")]
+		[string]$DestinationType = "Queue",
+		
+		$Port = 61616,
+		
+		[switch]$Raw
+	)
+
+	$Uri = [Uri]("activemq:tcp://{0}:{1}" -f $ComputerName, $Port)
+	$Factory = New-Object a`PA`CHe.Nms.`NmSC`onNE`cTionfaC`Tory($Uri)
+	
+	$Connection = $Factory.CreateConnection()
+	$Session = $Connection.CreateSession()
+	if($DestinationType -eq "Queue") {
+		$Destination = $Session.GetQueue($DestinationName)
+	} else {
+		$Destination = $Session.GetTopic($DestinationName)
+	}
+	$Consumer = $Session.CreateConsumer($Destination);
+	$Connection.Start()
+	
+	try {
+		$OneS
+InvokeObfuscation/PowerShellGallery/PSNessus/1.0.3.0/public/Get-NessusPolicies.ps1
+Script 1426
+function Get-NessusPolicies{
+	$pols = @{}
+	$resp = SeNd-`NesS`usR`eqUest "Get" "/editor/policy/templates"
+
+	foreach ($pol in $resp.templates)
+	{
+		$pols.Add($pol.title, $pol.uuid)
+	}
+
+	return $pols
+}
+InvokeObfuscation/PoshCode/Get-NTStatusException.ps1
+Script 1454
+function geT`-NTSt`AtuseXcepT`I`oN
+{
+
+    [CmdletBinding()] Param (
+        [Parameter(Position = 0, Mandatory = $True, ValueFromPipeline = $True)]
+        [Int32[]]
+        $ErrorCode
+    )
+
+    BEGIN
+    {
+        Set-StrictMode -Version 2
+
+        $Win32Native = [AppDomain]::CurrentDomain.GetAssemblies() | %{ $_.GetTypes() } | ? { $_.FullName -eq 'Microsoft.Win32.Win32Native' }
+
+        if ($Win32Native -eq $null)
+        {
+            throw "Unable to get a reference to type: Microsoft.Win32.Win32Native"
+        }
+
+        $LsaNtStatusToWinError = $Win32Native.GetMethod('LsaNtStatusToWinError', [Reflection.BindingFlags] 'NonPublic, Static')
+        $GetMessage = $Win32Native.GetMethod('GetMessage', [Reflection.BindingFlags] 'NonPublic, Static')
+    }
+    PROCESS
+    {
+        foreach ($Error in $ErrorCode)
+        {
+            $WinErrorCode = $LsaNtStatusToWinError.Invoke($null, @($ErrorCode))
+
+            Write-Output $GetMessage.Invoke($null, @($WinErrorCode))
+        }
+    }
+    END{}
+}
+
+InvokeObfuscation/Github/kissposh_kissModule/kissModule.psm1
+Script 1469
+Push-Location $psScriptRoot
+. .\Utils.ps1
+. .\Prompt.ps1
+Pop-Location
+InvokeObfuscation/UnderhandedPowerShell/UnderhandedPowerShell_378.ps1
+Script 1471
+
+    $code = "[System.Runtim e . In t e r o p S e rvic es .Ma r s h a l] : : S y s t e m D e f a u l t C h a r S ize".replace(' ','')
+    $newPowerShell = [PowerShell]::Create().AddScript($code)
+    $job = $newPowerShell.BeginInvoke()
+    While (-Not $job.IsCompleted) {}
+    $result = $newPowerShell.EndInvoke($job)
+    $newPowerShell.Dispose()
+    $result
+
+
+InvokeObfuscation/Github/tonyferrell_Enum.Performance.Library/Tools/PSake/psake.psm1
+Script 1556
+
+
+
+function Invoke-Task
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Position=0,Mandatory=1)] [string]$taskName
+    )
+
+    Assert $taskName ($msgs.error_invalid_task_name)
+
+    $taskKey = $taskName.ToLower()
+
+    if ($currentContext.aliases.Contains($taskKey)) {
+        $taskName = $currentContext.aliases.$taskKey.Name
+        $taskKey = $taskName.ToLower()
+    }
+
+    $currentContext = $psake.context.Peek()
+
+    Assert ($currentContext.tasks.Contains($taskKey)) ($msgs.error_task_name_does_not_exist -f $taskName)
+
+    if ($currentContext.executedTasks.Contains($taskKey))  { return }
+
+    Assert (!$currentContext.callStack.Contains($taskKey)) ($msgs.error_circular_reference -f $taskName)
+
+    $currentContext.callStack.Push($taskKey)
+
+    $task = $currentContext.tasks.$taskKey
+
+    $precondition_is_valid = & $task.Precondition
+
+    if (!$precondition_is_valid) {
+        WriteColoredOutput ($msgs.precondition_was_false -f $taskName) -foregroundcolor Cyan
+    } else {
+        if ($taskKey -ne ('defa'+'ult')) {
+
+            if ($task.PreAction -or $task.PostAction) {
+                Assert ($task.Action -ne $null) ($msgs.error_missing_action_parameter -f $taskName)
+            }
+
+            if ($task.Action) {
+                try {
+                    foreach($childTask in $task.DependsOn) {
+                        Invoke-Task $childTask
+                    }
+
+                    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+                    $currentContext.currentTaskName = $taskName
+
+                    & $currentContext.taskSetupScriptBlock
+
+                    if ($task.PreAction) {
+                        & $task.PreAction
+                    }
+
+                    if ($currentContext.config.taskNameFormat -is [ScriptBlock]) {
+                        & $currentContext.config.taskNameFormat $taskName
+                    } else {
+                        WriteColoredOutput ($currentContext.config.taskNameFormat -f $taskName) -foregroundcolor Cyan
+                    }
+
+                    foreach ($variable in $task.requiredVariables) {
+                        Assert ((test-path "variable:$variable") -and ((get-variable $variable).Value -ne $null)) ($msgs.required_variable_not_set -f $variable, $taskName)
+                    }
+
+                    & $task.Action
+
+                    if ($task.PostAction) {
+                        & $task.PostAction
+                    }
+
+                    & $currentContext.taskTearDownScriptBlock
+                    $task.Duration = $stopwatch.Elapsed
+                } catch {
+                    if ($task.ContinueOnError) {
+                        "-"*70
+                        WriteColoredOutput ($msgs.continue_on_error -f $taskName,$_) -foregroundcolor Yellow
+                        "-"*70
+                        $task.Duration = $stopwatch.Elapsed
+                    }  else {
+                        throw $_
+                    }
+                }
+            } else {
+                foreach($childTask in $task.DependsOn) {
+                    Invoke-Task $childTask
+                }
+            }
+        } else {
+            foreach($childTask in $task.DependsOn) {
+                Invoke-Task $childTask
+            }
+        }
+
+        Assert (& $task.Postcondition) ($msgs.postcondition_failed -f $taskName)
+    }
+
+    $poppedTaskKey = $currentContext.callStack.Pop()
+    Assert ($poppedTaskKey -eq $taskKey) ($msgs.error_corrupt_callstack -f $taskKey,$poppedTaskKey)
+
+    $currentContext.executedTasks.Push($taskKey)
+}
+
+function Exec
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Position=0,Mandatory=1)][scriptblock]$cmd,
+        [Parameter(Position=1,Mandatory=0)][string]$errorMessage = ($msgs.error_bad_command -f $cmd),
+        [Parameter(Position=2,Mandatory=0)][int]$maxRetries = 0,
+        [Parameter(Position=3,Mandatory=0)][string]$retryTriggerErrorPattern = $null
+    )
+
+    $tryCount = 1
+
+    do {
+        try {
+            $global:lastexitcode = 0
+            & $cmd
+            if ($lastexitcode -ne 0) {
+                throw (('E'+'xec: ') + $errorMes
+InvokeObfuscation/GithubGist/awmckinley_5fae30c32e5388fdeb13_raw_39706abc4d9326cffd8bd912cb50abc82d8185ce_boxstarter.ps1
+Script 1563
+Disable-UAC
+Set-WindowsExplorerOptions -EnableShowFileExtensions -EnableShowHiddenFilesFoldersDrives
+Update-ExecutionPolicy -Policy ('Re'+'mote'+'S'+'igned')
+
+cinst 7Zip.Install
+cinst BTSync
+cinst Cygwin
+cinst DaemonToolsLite
+cinst Foobar2000
+cinst Git.Install
+cinst HG
+cinst Inconsolata
+cinst Java.JDK
+cinst KeePass.Install
+cinst KeePassX
+cinst LibreOffice
+cinst LightTable
+cinst MarkPad
+cinst Notepad2
+cinst PowerShell4
+cinst PuTTY.Install
+cinst ResophNotes
+cinst SourceTree
+cinst SublimeText3
+cinst SublimeText3.PackageControl
+cinst SublimeText3.PowerShellAlias
+cinst Vagrant
+cinst VirtualBox
+cinst Waterfox

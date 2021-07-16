@@ -78,7 +78,7 @@ class ResNet(nn.Module):
         self.pre_out = LinearNorm(NUM_FILTERS // 2, 2)
     
     def forward(self, x):
-        x = x.permute(0, 2, 1)
+        # x = x.permute(0, 2, 1)
         half = self.num_filters // 2
         res = None
         skip = None
@@ -98,8 +98,8 @@ class ResNet(nn.Module):
             skip = tmp
             x = torch.dropout(tmp, 0.1, drop)
         x = x + res
-        x = x.permute(0, 2, 1)
-        pre = torch.sum(x, dim=1, dtype=torch.float)
+        # x = x.permute(0, 2, 1)
+        pre = torch.sum(x, dim=2, dtype=torch.float)
         pre /= 4096
         return torch.softmax(self.pre_out(pre), dim=1)
 
