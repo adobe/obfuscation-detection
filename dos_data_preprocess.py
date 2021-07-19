@@ -11,7 +11,7 @@ print(len(dos_lines[0]))
 print(len(dos_lines))
 
 tensors_x = []
-tensors_y = [torch.tensor([1, 0]) for _ in range(len(dos_lines))]
+tensors_y = [torch.tensor([0, 1]) for _ in range(len(dos_lines))]
 scripts = []
 
 for line in dos_lines:
