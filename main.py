@@ -185,7 +185,10 @@ elif args.analyze:
         ffile.write(script)
 
     model.eval()
-    filenames = torch.load('val_filenames_list.pth')
+    eval_data = ScriptDataset(torch.load(DATA_DIR + 'dos_data.pth'))
+    eval_loader = torch.utils.data.DataLoader(eval_data, batch_size=BATCH_SIZE, shuffle=False)
+    # filenames = torch.load('val_filenames_list.pth')
+    scripts = torch.load('dos_scripts.pth')
     char_dict = torch.load('char_dict.pth')
     int_to_char_dict = {}
     for char in char_dict:
@@ -195,10 +198,14 @@ elif args.analyze:
     fp_file = open('fp.txt', 'w')
     tp_file = open('tp.txt', 'w')
 
+    print(len(eval_loader))
+    print(len(eval_data))
+    print(len(scripts))
+
     # analyze on all val samples
     y_true = []
     y_pred = []
-    for i, (data, label) in enumerate(val_loader):
+    for i, (data, label) in enumerate(eval_loader):
         data, label = Variable(data.to(device)), Variable(label.to(device))
         output = model(data)
 
@@ -206,23 +213,27 @@ elif args.analyze:
         curr_y_true = list(torch.max(label, dim=1).indices.cpu().numpy())
         for j in range(len(curr_y_pred)):
             curr_idx = i * BATCH_SIZE + j
+            # print(i, j)
             # false negatives
             if curr_y_pred[j] == 0 and curr_y_true[j] == 1:
-                fn_file.write('\n{:s}\n'.format(filenames[curr_idx]))
+                # fn_file.write('\n{:s}\n'.format(filenames[curr_idx]))
                 fn_file.write('Script {:d}\n'.format(curr_idx))
-                print_command(data[j], int_to_char_dict, fn_file)
+                # print_command(data[j], int_to_char_dict, fn_file)
+                fn_file.write(scripts[curr_idx])
             
             # false positives
             if curr_y_pred[j] == 1 and curr_y_true[j] == 0:
-                fp_file.write('\n{:s}\n'.format(filenames[curr_idx]))
+                # fp_file.write('\n{:s}\n'.format(filenames[curr_idx]))
                 fp_file.write('Script {:d}\n'.format(curr_idx))
-                print_command(data[j], int_to_char_dict, fp_file)
+                # print_command(data[j], int_to_char_dict, fp_file)
+                fp_file.write(scripts[curr_idx])
 
             # true positives
-            if i < 5 and curr_y_pred[j] == 1 and curr_y_true[j] == 1:
-                tp_file.write('\n{:s}\n'.format(filenames[curr_idx]))
+            if curr_y_pred[j] == 1 and curr_y_true[j] == 1:
+                # tp_file.write('\n{:s}\n'.format(filenames[curr_idx]))
                 tp_file.write('Script {:d}\n'.format(curr_idx))
-                print_command(data[j], int_to_char_dict, tp_file)
+                # print_command(data[j], int_to_char_dict, tp_file)
+                tp_file.write(scripts[curr_idx])
 
         y_pred += curr_y_pred
         y_true += curr_y_true
@@ -269,6 +280,7 @@ elif args.analyze:
     print('\trecall: {:f}'.format(recall))
     print('\tconfusion matrix (tn, fp, fn, tp): {:d}, {:d}, {:d}, {:d}'.format(tn, fp, fn, tp))
 elif args.run:
+    # run to classify the real-world data points from the dataset
     real_world_data = ScriptDataset(torch.load(DATA_DIR + 'flip_train_data_real_world.pth'))
     real_world_loader = torch.utils.data.DataLoader(real_world_data, batch_size=BATCH_SIZE, shuffle=False)
 
@@ -324,6 +336,7 @@ elif args.run:
     print('pred 1s:', preds.count(1))
 
     '''
+    # run classification on test-scripts directory
     TEST_DIR = 'test-scripts/'
     for ffile in os.listdir(TEST_DIR):
         TENSOR_LENGTH = 1024
