@@ -185,10 +185,12 @@ elif args.analyze:
         ffile.write(script)
 
     model.eval()
-    eval_data = ScriptDataset(torch.load(DATA_DIR + 'dos_data.pth'))
+    # eval_data = ScriptDataset(torch.load(DATA_DIR + 'dos_data.pth'))
+    eval_data = ScriptDataset(torch.load(DATA_DIR + 'hubble_data.pth'))
     eval_loader = torch.utils.data.DataLoader(eval_data, batch_size=BATCH_SIZE, shuffle=False)
     # filenames = torch.load('val_filenames_list.pth')
-    scripts = torch.load('dos_scripts.pth')
+    # commands = torch.load('dos_scripts.pth')
+    commands = torch.load('hubble_cmds.pth')
     char_dict = torch.load('char_dict.pth')
     int_to_char_dict = {}
     for char in char_dict:
@@ -200,7 +202,7 @@ elif args.analyze:
 
     print(len(eval_loader))
     print(len(eval_data))
-    print(len(scripts))
+    print(len(commands))
 
     # analyze on all val samples
     y_true = []
@@ -219,21 +221,21 @@ elif args.analyze:
                 # fn_file.write('\n{:s}\n'.format(filenames[curr_idx]))
                 fn_file.write('Script {:d}\n'.format(curr_idx))
                 # print_command(data[j], int_to_char_dict, fn_file)
-                fn_file.write(scripts[curr_idx])
+                fn_file.write(commands[curr_idx])
             
             # false positives
             if curr_y_pred[j] == 1 and curr_y_true[j] == 0:
                 # fp_file.write('\n{:s}\n'.format(filenames[curr_idx]))
                 fp_file.write('Script {:d}\n'.format(curr_idx))
                 # print_command(data[j], int_to_char_dict, fp_file)
-                fp_file.write(scripts[curr_idx])
+                fp_file.write(commands[curr_idx])
 
             # true positives
             if curr_y_pred[j] == 1 and curr_y_true[j] == 1:
                 # tp_file.write('\n{:s}\n'.format(filenames[curr_idx]))
                 tp_file.write('Script {:d}\n'.format(curr_idx))
                 # print_command(data[j], int_to_char_dict, tp_file)
-                tp_file.write(scripts[curr_idx])
+                tp_file.write(commands[curr_idx])
 
         y_pred += curr_y_pred
         y_true += curr_y_true
