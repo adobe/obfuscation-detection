@@ -52,4 +52,4 @@ print(tensors_x.shape)
 print(tensors_y.shape)
 
 torch.save({'x': tensors_x, 'y': tensors_y}, 'data/processed_tensors/dos_data.pth')
-torch.save(scripts, 'dos_scripts.pth')
+torch.save(scripts, 'dos_cmds.pth')
