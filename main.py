@@ -185,12 +185,12 @@ elif args.analyze:
         ffile.write(script)
 
     model.eval()
-    eval_data = ScriptDataset(torch.load(DATA_DIR + 'dos2_data.pth'))
-    # eval_data = ScriptDataset(torch.load(DATA_DIR + 'hubble_data.pth'))
+    # eval_data = ScriptDataset(torch.load(DATA_DIR + 'dos2_data.pth'))
+    eval_data = ScriptDataset(torch.load(DATA_DIR + 'hubble_data.pth'))
     eval_loader = torch.utils.data.DataLoader(eval_data, batch_size=BATCH_SIZE, shuffle=False)
     # filenames = torch.load('val_filenames_list.pth')
-    commands = torch.load('dos2_scripts.pth')
-    # commands = torch.load('hubble_cmds.pth')
+    # commands = torch.load('dos2_scripts.pth')
+    commands = torch.load('hubble_cmds.pth')
     char_dict = torch.load('char_dict.pth')
     int_to_char_dict = {}
     for char in char_dict:

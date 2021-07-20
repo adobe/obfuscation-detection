@@ -58,10 +58,13 @@ for label_file in LABEL_FILES:
         x += 1
 
         ps_path = row[0].replace('\\', '/') # windows to mac file reading
+        '''
+        # only for filtering it out
         # skip "real-world" obfuscated b/c it's not that obfuscated in the dataset
         if (ps_path.startswith('GithubGist') or ps_path.startswith('PoshCode') or ps_path.startswith('TechNet')) and \
             int(row[1]) == 1:
             continue
+        '''
 
         # parse powershell script
 
@@ -176,7 +179,7 @@ train_idx, val_idx, test_idx = torch.utils.data.random_split(range(len(converted
                                                             # [8704, 1632, 544], # all samples - 10880
                                                             # [7745, 1452, 484], # no real-world - 9681
                                                             # [7704, 1444, 481], # no real-world + data cleaned - 9629
-                                                            [8633, 1618, 539], # real-world filtered + data cleaned - 10790
+                                                            [8656, 1623, 541], # real-world filtered + data cleaned - 10820
                                                             generator=torch.Generator().manual_seed(42))
 for i in train_idx:
     train_x.append(converted_tensors[i])

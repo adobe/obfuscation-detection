@@ -5,7 +5,7 @@ import gc
 random.seed(42)
 
 TOTAL_SAMPLES = 20480042
-NUM_SAMPLES = 65210
+NUM_SAMPLES = 65180
 TENSOR_LENGTH = 4096
 CHAR_DICT = torch.load('char_dict.pth')
 print(CHAR_DICT)
