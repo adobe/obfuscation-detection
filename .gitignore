@@ -5,3 +5,5 @@ data/
 models/
 models2/
 test-scripts/
+*.txt
+*.pth
