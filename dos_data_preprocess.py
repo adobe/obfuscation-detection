@@ -2,7 +2,11 @@ import torch
 
 TENSOR_LENGTH = 4096
 CHAR_DICT = torch.load('char_dict.pth')
-dos_file = open('data/STATIC_1-of-4_Out-DosConcatenatedCommand.txt', 'r', encoding='utf-16')
+# dos_file = open('data/STATIC_1-of-4_Out-DosConcatenatedCommand.txt', 'r', encoding='utf-16')
+dos_file = open('data/STATIC_2-of-4_Out-DosReversedCommand.txt', 'r', encoding='utf-16')
+# dos_file = open('data/STATIC_3-of-4_Out-DosFORcodedCommand.txt', 'r', encoding='utf-16')
+# dos_file = open('data/STATIC_4-of-4_Out-DosFINcodedCommand.txt', 'r', encoding='utf-16')
+
 
 print(CHAR_DICT)
 dos_lines = dos_file.readlines()
@@ -41,5 +45,5 @@ print(tensors_y[0])
 print(tensors_x.shape)
 print(tensors_y.shape)
 
-torch.save({'x': tensors_x, 'y': tensors_y}, 'data/processed_tensors/dos_data.pth')
-torch.save(scripts, 'dos_scripts.pth')
+torch.save({'x': tensors_x, 'y': tensors_y}, 'data/processed_tensors/dos2_data.pth')
+torch.save(scripts, 'dos2_scripts.pth')
