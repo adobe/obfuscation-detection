@@ -5,11 +5,12 @@ import gc
 random.seed(42)
 
 TOTAL_SAMPLES = 20480042
-NUM_SAMPLES = 65180
+NUM_SAMPLES = 17180
 TENSOR_LENGTH = 4096
 # indices only work for current csv file and current 65180 NUM_SAMPLES
-OBFUSCATED = [4472, 7525, 9402, 10990, 12029, 19751, 28577, 32235, 44386, 47108, 49523,\
-                56473, 57113, 58178, 60861, 17273, 36984, 59022]
+# OBFUSCATED = [4472, 7525, 9402, 10990, 12029, 19751, 28577, 32235, 44386, 47108, 49523,\
+#                 56473, 57113, 58178, 60861, 17273, 36984, 59022]
+OBFUSCATED = []
 print('num obfuscated:', len(OBFUSCATED))
 CHAR_DICT = torch.load('char_dict.pth')
 print(CHAR_DICT)
