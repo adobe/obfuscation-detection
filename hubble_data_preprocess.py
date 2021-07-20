@@ -5,8 +5,12 @@ import gc
 random.seed(42)
 
 TOTAL_SAMPLES = 20480042
-NUM_SAMPLES = 65210
+NUM_SAMPLES = 65180
 TENSOR_LENGTH = 4096
+# indices only work for current csv file and current 65180 NUM_SAMPLES
+OBFUSCATED = [4472, 7525, 9402, 10990, 12029, 19751, 28577, 32235, 44386, 47108, 49523,\
+                56473, 57113, 58178, 60861, 17273, 36984, 59022]
+print('num obfuscated:', len(OBFUSCATED))
 CHAR_DICT = torch.load('char_dict.pth')
 print(CHAR_DICT)
 hubble_csv = pd.read_csv('data/win_cmds_hubble.csv')
@@ -41,12 +45,18 @@ for i in range(len(random_idx)):
     
     cmds.append(cmd)
 
+for o in OBFUSCATED:
+    print(cmds[o])
+    hubble_y[o][0] = 0
+    hubble_y[o][1] = 1
+
 print(cmds[0])
 print(hubble_x[0][23][0])
 print(hubble_x[0][73][0])
 print(hubble_x[0][67][2])
 print(hubble_x[0][73][2])
 print(hubble_y[0])
+print(hubble_y[OBFUSCATED[2]])
 print(hubble_x.shape)
 print(hubble_y.shape)
 
