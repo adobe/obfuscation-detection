@@ -23,8 +23,8 @@ print(hubble_csv.loc[0]['process'])
 print(len(random_idx))
 print(random_idx[0:5])
 
-hubble_x = torch.zeros(NUM_SAMPLES, len(CHAR_DICT) + 1, TENSOR_LENGTH)
-hubble_y = torch.stack([torch.Tensor([1, 0]) for _ in range(NUM_SAMPLES)])
+hubble_x = torch.zeros(NUM_SAMPLES, len(CHAR_DICT) + 1, TENSOR_LENGTH, dtype=torch.int8)
+hubble_y = torch.stack([torch.tensor([1, 0], dtype=torch.int8) for _ in range(NUM_SAMPLES)])
 cmds = []
 x = 0
 for i in range(len(random_idx)):
@@ -57,9 +57,9 @@ print(hubble_x[0][73][0])
 print(hubble_x[0][67][2])
 print(hubble_x[0][73][2])
 print(hubble_y[0])
-print(hubble_y[OBFUSCATED[2]])
-print(hubble_x.shape)
-print(hubble_y.shape)
+# print(hubble_y[OBFUSCATED[2]])
+print(hubble_x.shape, hubble_x.dtype)
+print(hubble_y.shape, hubble_y.dtype)
 
 torch.save({'x': hubble_x, 'y': hubble_y}, 'data/processed_tensors/hubble_data.pth')
 torch.save(cmds, 'hubble_cmds.pth')

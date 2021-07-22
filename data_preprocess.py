@@ -1,10 +1,5 @@
 import torch
 
-device = torch.device('cpu')
-if torch.cuda.is_available():
-    device = torch.device('cuda')
-    print('using CUDA', torch.cuda.current_device())
-
 DATA_DIR = 'data/processed_tensors/'
 ps_tensors = torch.load(DATA_DIR + 'ps_data.pth')
 print('loaded ps data:', ps_tensors['x'].shape, ps_tensors['y'].shape)
@@ -17,11 +12,18 @@ ps_scripts = torch.load('ps_scripts.pth')
 dos_cmds = torch.load('dos_cmds.pth')
 hubble_cmds = torch.load('hubble_cmds.pth')
 
-all_tensors_x = torch.cat((ps_tensors['x'], dos_tensors['x'], hubble_tensors['x'])).to(device)
-all_tensors_y = torch.cat((ps_tensors['y'], dos_tensors['y'], hubble_tensors['y'])).to(device)
+all_tensors_x = torch.cat((ps_tensors['x'], dos_tensors['x'], hubble_tensors['x']))
+all_tensors_y = torch.cat((ps_tensors['y'], dos_tensors['y'], hubble_tensors['y']))
 all_scripts = ps_scripts + dos_cmds + hubble_cmds
+# all_tensors_x = torch.cat((dos_tensors['x'], hubble_tensors['x']))
+# all_tensors_y = torch.cat((dos_tensors['y'], hubble_tensors['y']))
+# all_scripts = dos_cmds + hubble_cmds
 print('all tensors:', all_tensors_x.shape, all_tensors_y.shape)
 print('scripts:', len(all_scripts))
+
+# # for unk_word_ratio
+# torch.save(all_scripts, 'all_scripts.pth')
+# print('saved all scripts')
 
 # train-dev-test split of 80-15-5
 train_cmds = []
@@ -37,7 +39,8 @@ test_x = []
 test_y = []
 train_idx, val_idx, test_idx = torch.utils.data.random_split(range(len(all_tensors_x)), 
                                                             # hard-calculated 80-15-5 split
-                                                            [64000, 12000, 4000], # 80000 samples
+                                                            # [64000, 12000, 4000], # 80000 samples
+                                                            [25607, 4801, 1600], # 32008 split
                                                             generator=torch.Generator().manual_seed(42))
 for i in train_idx:
     train_x.append(all_tensors_x[i])
@@ -58,9 +61,9 @@ val_y = torch.stack(val_y)
 test_x = torch.stack(test_x)
 test_y = torch.stack(test_y)
 
-print(train_x.shape, train_y.shape)
-print(val_x.shape, val_y.shape)
-print(test_x.shape, test_y.shape)
+print(train_x.shape, train_y.shape, train_x.dtype, train_y.dtype)
+print(val_x.shape, val_y.shape, val_x.dtype, val_y.dtype)
+print(test_x.shape, test_y.shape, test_x.dtype, test_y.dtype)
 
 torch.save({'x': train_x, 'y': train_y}, DATA_DIR + 'train_data.pth')
 torch.save({'x': val_x, 'y': val_y}, DATA_DIR + 'val_data.pth')

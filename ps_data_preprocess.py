@@ -122,7 +122,7 @@ for label_file in LABEL_FILES:
         # if ps_path == 'GithubGist/9to5IT_9620565_raw_04b5a0e0d62290ccf025de4ab9c75597a75d6d9c_Logging_Functions.ps1':
         #     print(multi_line_indices)
         #     print(file_str)
-        ps_tensor = torch.zeros(len(char_dict) + 1, TENSOR_LENGTH) # + 1 for case bit
+        ps_tensor = torch.zeros(len(char_dict) + 1, TENSOR_LENGTH, dtype=torch.int8) # + 1 for case bit
         tensor_len = min(len(file_str), TENSOR_LENGTH)
         ps_script = ''
         for i in range(tensor_len):
@@ -137,10 +137,10 @@ for label_file in LABEL_FILES:
         converted_tensors.append(ps_tensor)
         if int(row[1]) == 1:
             num_pos += 1
-            tensor_labels.append(torch.Tensor([0, 1]))
+            tensor_labels.append(torch.tensor([0, 1], dtype=torch.int8))
         else:
             num_neg += 1
-            tensor_labels.append(torch.Tensor([1, 0]))
+            tensor_labels.append(torch.tensor([1, 0], dtype=torch.int8))
 
         # for tracking
         filenames.append(ps_path)
@@ -169,6 +169,9 @@ print(len(tensor_labels))
 
 converted_tensors = torch.stack(converted_tensors)
 tensor_labels = torch.stack(tensor_labels)
+
+print(converted_tensors.shape, converted_tensors.dtype)
+print(tensor_labels.shape, tensor_labels.dtype)
 
 torch.save({'x': converted_tensors, 'y': tensor_labels}, PROCESSED_TENSORS_DIR + 'ps_data.pth')
 torch.save(char_dict, 'char_dict.pth')

@@ -21,11 +21,11 @@ print(len(dos_lines[0]))
 print(len(dos_lines))
 
 tensors_x = []
-tensors_y = [torch.tensor([0, 1]) for _ in range(len(dos_lines))]
+tensors_y = [torch.tensor([0, 1], dtype=torch.int8) for _ in range(len(dos_lines))]
 scripts = []
 
 for line in dos_lines:
-    script_tensor = torch.zeros(len(CHAR_DICT) + 1, TENSOR_LENGTH)
+    script_tensor = torch.zeros(len(CHAR_DICT) + 1, TENSOR_LENGTH, dtype=torch.int8)
     tensor_len = min(TENSOR_LENGTH, len(line))
 
     for i in range(tensor_len):
@@ -48,8 +48,8 @@ print(tensors_x[0][73][0])
 print(tensors_x[0][23][5])
 print(tensors_x[0][73][5])
 print(tensors_y[0])
-print(tensors_x.shape)
-print(tensors_y.shape)
+print(tensors_x.shape, tensors_x.dtype)
+print(tensors_y.shape, tensors_y.dtype)
 
 torch.save({'x': tensors_x, 'y': tensors_y}, 'data/processed_tensors/dos_data.pth')
 torch.save(scripts, 'dos_cmds.pth')
