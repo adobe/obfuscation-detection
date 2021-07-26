@@ -17,33 +17,13 @@ LABEL_FILES = [
     # 'UnderhandedPowerShell-obfuscation-labeledData.csv'
 ]
 PROCESSED_TENSORS_DIR = 'data/processed_tensors/'
-FREQ_CUTOFF = 0.00002 # found from char_frequency.py to include ^
 TENSOR_LENGTH = 4096
 
-char_freq_file = open('char_freq.txt', 'r')
-char_dict = {}
-char_dict_curr_idx = 0
+char_dict = torch.load('char_dict.pth')
+print(char_dict)
+
 converted_tensors = []
 tensor_labels = []
-
-# make character to tensor index dictionary from the char frequencies file
-for char_freq in char_freq_file:
-    char_freq = char_freq.split(' ')
-    char = char_freq[0]
-    freq = float(char_freq[1][:-1]) # remove new line
-    if freq > FREQ_CUTOFF:
-        if char == '<space>':
-            char = ' '
-        elif char == '<tab>':
-            char = '\t'
-        elif char == '<newline>':
-            char = '\n'
-        elif char == '<return>':
-            char = '\r'
-        char_dict[char] = char_dict_curr_idx
-        char_dict_curr_idx += 1
-print(char_dict)
-print('len of chars:', len(char_dict))
 
 # iterate through labels
 x = 0
@@ -174,7 +154,6 @@ print(converted_tensors.shape, converted_tensors.dtype)
 print(tensor_labels.shape, tensor_labels.dtype)
 
 torch.save({'x': converted_tensors, 'y': tensor_labels}, PROCESSED_TENSORS_DIR + 'ps_data.pth')
-torch.save(char_dict, 'char_dict.pth')
 torch.save(ps_scripts, 'ps_scripts.pth')
 torch.save(filenames, 'ps_filenames.pth')
 
@@ -227,7 +206,6 @@ print(test_x.shape, test_y.shape)
 torch.save({'x': train_x, 'y': train_y}, PROCESSED_TENSORS_DIR + 'resnet_train_data.pth')
 torch.save({'x': val_x, 'y': val_y}, PROCESSED_TENSORS_DIR + 'resnet_val_data.pth')
 torch.save({'x': test_x, 'y': test_y}, PROCESSED_TENSORS_DIR + 'resnet_test_data.pth')
-torch.save(char_dict, 'char_dict.pth')
 torch.save(train_filenames, 'train_filenames_list.pth')
 torch.save(val_filenames, 'val_filenames_list.pth')
 torch.save(test_filenames, 'test_filenames_list.pth')

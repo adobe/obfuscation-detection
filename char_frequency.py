@@ -69,4 +69,3 @@ print('unparseable commands:', unparsable)
 print('parseable commands:', total_cmds - unparsable)
 
 char_freq_file.close()
-# current cutoff is 0.0003691787536410754, or 0.0003
