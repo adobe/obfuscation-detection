@@ -1,8 +1,9 @@
 import torch
 
+DATA_DIR = '../data/prep/'
 FREQ_CUTOFF = 0.00002 # found from char_frequency.py to include ^
 
-char_freq_file = open('char_freq.txt', 'r')
+char_freq_file = open(DATA_DIR + 'char_freq.txt', 'r')
 char_dict = {}
 char_dict_curr_idx = 0
 
@@ -25,4 +26,4 @@ for char_freq in char_freq_file:
 print(char_dict)
 print('len of chars:', len(char_dict))
 
-torch.save(char_dict, 'char_dict.pth')
+torch.save(char_dict, DATA_DIR + 'char_dict.pth')

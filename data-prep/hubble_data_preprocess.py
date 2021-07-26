@@ -4,6 +4,7 @@ import random
 import gc
 random.seed(42)
 
+DATA_DIR = '../data/'
 TOTAL_SAMPLES = 20480042
 NUM_SAMPLES = 17180
 TENSOR_LENGTH = 4096
@@ -12,9 +13,9 @@ TENSOR_LENGTH = 4096
 #                 56473, 57113, 58178, 60861, 17273, 36984, 59022]
 OBFUSCATED = []
 print('num obfuscated:', len(OBFUSCATED))
-CHAR_DICT = torch.load('char_dict.pth')
+CHAR_DICT = torch.load(DATA_DIR + 'prep/char_dict.pth')
 print(CHAR_DICT)
-hubble_csv = pd.read_csv('data/win_cmds_hubble.csv')
+hubble_csv = pd.read_csv(DATA_DIR + 'win_cmds_hubble.csv')
 print(hubble_csv.shape[0])
 
 # choose random 100k samples from whole dataset
@@ -61,5 +62,5 @@ print(hubble_y[0])
 print(hubble_x.shape, hubble_x.dtype)
 print(hubble_y.shape, hubble_y.dtype)
 
-torch.save({'x': hubble_x, 'y': hubble_y}, 'data/processed_tensors/hubble_data.pth')
-torch.save(cmds, 'hubble_cmds.pth')
+torch.save({'x': hubble_x, 'y': hubble_y}, DATA_DIR + 'processed_tensors/hubble_data.pth')
+torch.save(cmds, DATA_DIR + 'scripts/hubble_cmds.pth')

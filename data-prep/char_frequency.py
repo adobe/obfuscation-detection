@@ -1,8 +1,9 @@
 import pandas as pd
 import traceback
 
-DATA_DIR = 'data/PowerShellCorpus/'
+DATA_DIR = '../data/PowerShellCorpus/'
 LABELS_DIR = '../Revoke-Obfuscation/DataScience/'
+PREP_DIR = '../data/prep/'
 LABEL_FILES = [
     'GithubGist-obfuscation-labeledData.csv',
     'InvokeCradleCrafter-obfuscation-labeledData.csv',
@@ -13,7 +14,7 @@ LABEL_FILES = [
     # 'UnderhandedPowerShell-obfuscation-labeledData.csv', # not provided to us by author
 ]
 
-char_freq_file = open('char_freq.txt', 'x')
+char_freq_file = open(PREP_DIR + 'char_freq.txt', 'x')
 char_counts = {}
 total_chars = 0
 unparsable = 0

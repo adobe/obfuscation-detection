@@ -1,6 +1,7 @@
 import torch
 
-DATA_DIR = 'data/processed_tensors/'
+DATA_DIR = '../data/processed_tensors/'
+SCRIPTS_DIR = '../data/scripts/'
 ps_tensors = torch.load(DATA_DIR + 'ps_data.pth')
 print('loaded ps data:', ps_tensors['x'].shape, ps_tensors['y'].shape)
 dos_tensors = torch.load(DATA_DIR + 'dos_data.pth')
@@ -8,9 +9,9 @@ print('loaded dos data:', dos_tensors['x'].shape, dos_tensors['y'].shape)
 hubble_tensors = torch.load(DATA_DIR + 'hubble_data.pth')
 print('loaded hubble data:', hubble_tensors['x'].shape, hubble_tensors['y'].shape)
 
-ps_scripts = torch.load('ps_scripts.pth')
-dos_cmds = torch.load('dos_cmds.pth')
-hubble_cmds = torch.load('hubble_cmds.pth')
+ps_scripts = torch.load(SCRIPTS_DIR + 'ps_scripts.pth')
+dos_cmds = torch.load(SCRIPTS_DIR + 'dos_cmds.pth')
+hubble_cmds = torch.load(SCRIPTS_DIR + 'hubble_cmds.pth')
 
 all_tensors_x = torch.cat((ps_tensors['x'], dos_tensors['x'], hubble_tensors['x']))
 all_tensors_y = torch.cat((ps_tensors['y'], dos_tensors['y'], hubble_tensors['y']))
@@ -68,6 +69,6 @@ print(test_x.shape, test_y.shape, test_x.dtype, test_y.dtype)
 torch.save({'x': train_x, 'y': train_y}, DATA_DIR + 'train_data.pth')
 torch.save({'x': val_x, 'y': val_y}, DATA_DIR + 'val_data.pth')
 torch.save({'x': test_x, 'y': test_y}, DATA_DIR + 'test_data.pth')
-torch.save(train_cmds, 'train_cmds_list.pth')
-torch.save(val_cmds, 'val_cmds_list.pth')
-torch.save(test_cmds, 'test_cmds_list.pth')
+torch.save(train_cmds, SCRIPTS_DIR + 'train_cmds_list.pth')
+torch.save(val_cmds, SCRIPTS_DIR + 'val_cmds_list.pth')
+torch.save(test_cmds, SCRIPTS_DIR + 'test_cmds_list.pth')

@@ -1,11 +1,12 @@
 import torch
 
+DATA_DIR = '../data/'
 TENSOR_LENGTH = 4096
-CHAR_DICT = torch.load('char_dict.pth')
-dos_files = [open('data/STATIC_1-of-4_Out-DosConcatenatedCommand.txt', 'r', encoding='utf-16'),
-            open('data/STATIC_2-of-4_Out-DosReversedCommand.txt', 'r', encoding='utf-16'),
-            open('data/STATIC_3-of-4_Out-DosFORcodedCommand.txt', 'r', encoding='utf-16'),
-            open('data/STATIC_4-of-4_Out-DosFINcodedCommand.txt', 'r', encoding='utf-16')]
+CHAR_DICT = torch.load(DATA_DIR + 'prep/char_dict.pth')
+dos_files = [open(DATA_DIR + 'STATIC_1-of-4_Out-DosConcatenatedCommand.txt', 'r', encoding='utf-16'),
+            open(DATA_DIR + 'STATIC_2-of-4_Out-DosReversedCommand.txt', 'r', encoding='utf-16'),
+            open(DATA_DIR + 'STATIC_3-of-4_Out-DosFORcodedCommand.txt', 'r', encoding='utf-16'),
+            open(DATA_DIR + 'STATIC_4-of-4_Out-DosFINcodedCommand.txt', 'r', encoding='utf-16')]
 # dos_file = open('data/STATIC_1-of-4_Out-DosConcatenatedCommand.txt', 'r', encoding='utf-16')
 # dos_file = open('data/STATIC_2-of-4_Out-DosReversedCommand.txt', 'r', encoding='utf-16')
 # dos_file = open('data/STATIC_3-of-4_Out-DosFORcodedCommand.txt', 'r', encoding='utf-16')
@@ -51,5 +52,5 @@ print(tensors_y[0])
 print(tensors_x.shape, tensors_x.dtype)
 print(tensors_y.shape, tensors_y.dtype)
 
-torch.save({'x': tensors_x, 'y': tensors_y}, 'data/processed_tensors/dos_data.pth')
-torch.save(scripts, 'dos_cmds.pth')
+torch.save({'x': tensors_x, 'y': tensors_y}, DATA_DIR + 'processed_tensors/dos_data.pth')
+torch.save(scripts, DATA_DIR + 'scripts/dos_cmds.pth')
