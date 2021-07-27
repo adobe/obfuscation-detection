@@ -1,14 +1,12 @@
-from main import DATA_DIR
 import pandas as pd
 import torch
 import traceback
-import os
 import re
 
 # dataset from Bohannon (2017)
 DATA_DIR = '../data/'
 PS_DIR = DATA_DIR + 'PowerShellCorpus/'
-LABELS_DIR = '../Revoke-Obfuscation/DataScience/'
+LABELS_DIR = '../../Revoke-Obfuscation/DataScience/'
 LABEL_FILES = [
     'GithubGist-obfuscation-labeledData.csv',
     'InvokeCradleCrafter-obfuscation-labeledData.csv',

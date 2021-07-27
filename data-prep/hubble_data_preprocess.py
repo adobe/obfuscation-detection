@@ -1,7 +1,6 @@
 import torch
 import pandas as pd
 import random
-import gc
 random.seed(42)
 
 DATA_DIR = '../data/'

@@ -9,6 +9,8 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from models import *
 
 DATA_DIR = 'data/processed_tensors/'
+SCRIPTS_DIR = 'data/scripts/'
+PREP_DIR = 'data/prep/'
 EPOCHS = 100
 BATCH_SIZE = 8
 
@@ -106,29 +108,25 @@ mse = nn.MSELoss()
 epoch = 0
 
 # load data
-if args.model.startswith('lstm'):
-    train_data = ScriptDataset(torch.load(DATA_DIR + 'flip_train_data.pth'))
-    val_data = ScriptDataset(torch.load(DATA_DIR + 'flip_val_data.pth'))
-elif args.model.startswith('resnet'):
-    train_data = ScriptDataset(torch.load(DATA_DIR + 'resnet_train_data.pth'))
-    val_data = ScriptDataset(torch.load(DATA_DIR + 'resnet_val_data.pth'))
-else:
-    train_data = ScriptDataset(torch.load(DATA_DIR + 'train_data.pth'))
-    val_data = ScriptDataset(torch.load(DATA_DIR + 'val_data.pth'))
+train_data = ScriptDataset(torch.load(DATA_DIR + 'train_data.pth'))
+val_data = ScriptDataset(torch.load(DATA_DIR + 'val_data.pth'))
 train_loader = torch.utils.data.DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = torch.utils.data.DataLoader(val_data, batch_size=BATCH_SIZE, shuffle=False)
 print('loaded data:', len(train_data), len(val_data))
 
-best_val_acc = 0.
+best_val_f1 = 0.
 if not args.reset:
     # load checkpoint if eval or not retraining
     checkpoint = torch.load(model_file, map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     epoch = checkpoint['epoch']
-    val_acc = checkpoint['val_acc']
-    best_val_acc = val_acc
-    print('loaded {:s} on epoch {:d} with val acc {:f}'.format(model_file, epoch, val_acc))
+    if 'val_f1' in checkpoint:
+        val_f1 = checkpoint['val_f1']
+        best_val_f1 = val_f1
+        print('loaded {:s} on epoch {:d} with val f1 {:f}'.format(model_file, epoch, val_f1))
+    else:
+        print('loaded model with acc ' + str(checkpoint['val_acc']))
 
 def eval_model(dataset_name, model, data_loader, num_data, loss_fn):
     model.eval()
@@ -138,7 +136,8 @@ def eval_model(dataset_name, model, data_loader, num_data, loss_fn):
     y_pred = []
     for _, (data, label) in enumerate(data_loader):
         # run model
-        data, label = Variable(data.to(device)), Variable(label.to(device))
+        data, label = Variable(data.type(torch.float).to(device)), \
+                            Variable(label.type(torch.float).to(device))
         output = model(data)
 
         # calculate loss
@@ -160,7 +159,7 @@ def eval_model(dataset_name, model, data_loader, num_data, loss_fn):
     print('\t{:s} precision: {:f}'.format(dataset_name, prec))
     print('\t{:s} recall: {:f}'.format(dataset_name, recall))
     print('\t{:s} confusion matrix (tn, fp, fn, tp): {:d}, {:d}, {:d}, {:d}'.format(dataset_name, tn, fp, fn, tp))
-    return avg_loss, acc
+    return avg_loss, f1
 
 if args.eval:
     # eval model
@@ -168,7 +167,7 @@ if args.eval:
     eval_model('val', model, val_loader, len(val_data), mse)
 elif args.test:
     # eval model on test
-    test_data = ScriptDataset(torch.load(DATA_DIR + 'resnet_test_data.pth'))
+    test_data = ScriptDataset(torch.load(DATA_DIR + 'test_data.pth'))
     test_loader = torch.utils.data.DataLoader(test_data, batch_size=BATCH_SIZE, shuffle=False)
     eval_model('test', model, test_loader, len(test_data), mse)
 elif args.analyze:
@@ -190,8 +189,8 @@ elif args.analyze:
     eval_loader = torch.utils.data.DataLoader(eval_data, batch_size=BATCH_SIZE, shuffle=False)
     # filenames = torch.load('val_filenames_list.pth')
     # commands = torch.load('dos2_scripts.pth')
-    commands = torch.load('hubble_cmds.pth')
-    char_dict = torch.load('char_dict.pth')
+    commands = torch.load(SCRIPTS_DIR + 'hubble_cmds.pth')
+    char_dict = torch.load(PREP_DIR + 'char_dict.pth')
     int_to_char_dict = {}
     for char in char_dict:
         int_to_char_dict[char_dict[char]] = char
@@ -211,7 +210,8 @@ elif args.analyze:
         if i % 1000 == 0:
             print(i)
         
-        data, label = Variable(data.to(device)), Variable(label.to(device))
+        data, label = Variable(data.type(torch.float).to(device)), \
+                            Variable(label.type(torch.float).to(device))
         output = model(data)
 
         curr_y_pred = list(torch.max(output, dim=1).indices.cpu().numpy())
@@ -319,7 +319,8 @@ elif args.run:
     model.eval()
     preds = []
     for _, (data, label) in enumerate(real_world_loader):
-        data, label = Variable(data.to(device)), Variable(label.to(device))
+        data, label = Variable(data.type(torch.float).to(device)), \
+                            Variable(label.type(torch.float).to(device))
         output = model(data)
         preds += list(torch.max(output, dim=1).indices.cpu().numpy())
     
@@ -385,7 +386,8 @@ else:
         # run training
         model.train()
         for batch_idx, (data, label) in enumerate(train_loader):
-            data, label = Variable(data.to(device)), Variable(label.to(device))
+            data, label = Variable(data.type(torch.float).to(device)), \
+                            Variable(label.type(torch.float).to(device))
             output = model(data)
             loss = mse(output, label)
             optimizer.zero_grad()
@@ -397,15 +399,15 @@ else:
 
         # eval model
         eval_model('train', model, train_loader, len(train_data), mse)
-        _, val_acc = eval_model('val', model, val_loader, len(val_data), mse)
+        _, val_f1 = eval_model('val', model, val_loader, len(val_data), mse)
 
-        # save model every epoch if better val acc
-        if val_acc > best_val_acc:
+        # save model every epoch if better val f1
+        if val_f1 > best_val_f1:
             print('saving this best checkpoint')
-            best_val_acc = val_acc
+            best_val_f1 = val_f1
             torch.save({
                 'epoch': i,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'val_acc': val_acc
+                'val_f1': val_f1
             }, model_file)

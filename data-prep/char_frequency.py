@@ -2,7 +2,7 @@ import pandas as pd
 import traceback
 
 DATA_DIR = '../data/PowerShellCorpus/'
-LABELS_DIR = '../Revoke-Obfuscation/DataScience/'
+LABELS_DIR = '../../Revoke-Obfuscation/DataScience/'
 PREP_DIR = '../data/prep/'
 LABEL_FILES = [
     'GithubGist-obfuscation-labeledData.csv',
