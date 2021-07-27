@@ -9,6 +9,7 @@ types of malware and obfuscation techniques. Deep learning has been used in vari
 create models that are dynamic and can adapt to new types of information. Our project uses deep 
 learning techniques to detect command obfuscation.
 
+
 ## Installation
 
 ### Pre-requisites
@@ -29,6 +30,7 @@ mkdir models
 
 5. We also use internal Adobe command line executions as a bulk of our training data. We may not release this dataset to the public, so we encourage you to either not exclude this dataset or find an open-source command prompt dataset on the internet.
 
+
 ### Data Prep
 
 `cd data-prep`, then run the following python scripts in order:
@@ -46,9 +48,9 @@ mkdir models
 6. `python data_preprocess.py`: creates train/dev/test tensor split by accumulating all tensors.
 
 
-### Running
+### Usage
 
-`models.py`: contains the different model architectures we experimented with
+`cd ..`, then run `python main.py` with the given options!
 
 `main.py`:
 - `--model` - choose a model architecture
@@ -61,3 +63,13 @@ mkdir models
     - `--run` - run on real scripts on `test-scripts` dir
     - `--test` - run model on test set
     - none - continue training model from checkpoint
+
+`models.py`: contains the different model architectures we experimented with
+
+### Contributing
+
+Contributions are welcomed! Read the [Contributing Guide](./CONTRIBUTING.md) for more information.
+
+### Licensing
+
+This project is licensed under the Apache V2 License. See [LICENSE](LICENSE) for more information.
