@@ -4,6 +4,20 @@ import re
 # from https://github.com/first20hours/google-10000-english, removed a-z letters
 top_10k_file = open('top-10k-words.txt')
 top_10k_words = set(top_10k_file.read().split())
+# 
+# Authors: Security Intelligence Team within the Security Coordination Center
+# 
+# Copyright 2021 Adobe. All rights reserved.
+# This file is licensed to you under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. You may obtain a copy
+# of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS 
+# OF ANY KIND, either express or implied. See the License for the specific language
+# governing permissions and limitations under the License.
+#
+
 print(len(top_10k_words))
 
 commands = torch.load('all_scripts.pth')
