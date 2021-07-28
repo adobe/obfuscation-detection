@@ -1,4 +1,4 @@
-# Obfuscation Detection with Deep Learning
+# Obfuscation Detection with Deep Learning (ODDL)
 
 Command obfuscation is a technique to make a piece of code intentionally hard-to-read, but still 
 execute the same functionality. Malicious attackers often abuse obfuscation to make their malicious 
@@ -50,7 +50,7 @@ mkdir models
 
 ### Usage
 
-`cd ..`, then run `python main.py` with the given options!
+`cd ../oddl`, then run `python main.py` with the given options!
 
 `main.py`:
 - `--model` - choose a model architecture
@@ -65,6 +65,21 @@ mkdir models
     - none - continue training model from checkpoint
 
 `models.py`: contains the different model architectures we experimented with
+
+### Examples
+
+Training model:
+- From scratch: `python main.py --model resnet --model_file resnet.pth --reset`
+- From checkpoint: `python main.py --model resnet --model_file resnet.pth`
+
+Eval model: `python main.py --model resnet --model_file resnet.pth --eval`
+
+Test model: `python main.py --model resnet --model_file resnet.pth --test`
+
+Running model on new data:
+1. Put each separate script/command in its own file
+2. Put all script/command files in a new dir `test-scripts`
+3. Run `python main.py --model resnet --model_file resnet.pth --run`
 
 ### Contributing
 

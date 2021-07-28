@@ -22,9 +22,9 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 
 from models import *
 
-DATA_DIR = 'data/processed_tensors/'
-SCRIPTS_DIR = 'data/scripts/'
-PREP_DIR = 'data/prep/'
+DATA_DIR = '../data/processed_tensors/'
+SCRIPTS_DIR = '../data/scripts/'
+PREP_DIR = '../data/prep/'
 EPOCHS = 100
 BATCH_SIZE = 8
 

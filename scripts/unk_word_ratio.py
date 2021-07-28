@@ -2,7 +2,7 @@ import torch
 import re
 
 # from https://github.com/first20hours/google-10000-english, removed a-z letters
-top_10k_file = open('top-10k-words.txt')
+top_10k_file = open('../data/top-10k-words.txt')
 top_10k_words = set(top_10k_file.read().split())
 # 
 # Authors: Security Intelligence Team within the Security Coordination Center
@@ -20,7 +20,7 @@ top_10k_words = set(top_10k_file.read().split())
 
 print(len(top_10k_words))
 
-commands = torch.load('all_scripts.pth')
+commands = torch.load('../data/scripts/all_scripts.pth')
 print(len(commands))
 # print(commands[0])
 # command = ''.join(e for e in commands[0] if e.isalnum() or e == ' ')
@@ -53,7 +53,7 @@ print(len(ratios))
 print(ratios[0])
 
 sorted_idx = sorted(range(len(ratios)), key = lambda k: ratios[k], reverse = True)
-ranked_file = open('unk_word_ratio_ranked_only_cmd.txt', 'w')
+ranked_file = open('../data/unk_word_ratio_ranked_only_cmd.txt', 'w')
 for i in sorted_idx:
     ranked_file.write('ratio: ' + str(ratios[i]) + '\n')
     ranked_file.write(commands[i] + '\n')
