@@ -1,9 +1,3 @@
-import torch
-import re
-
-# from https://github.com/first20hours/google-10000-english, removed a-z letters
-top_10k_file = open('../data/top-10k-words.txt')
-top_10k_words = set(top_10k_file.read().split())
 # 
 # Authors: Security Intelligence Team within the Security Coordination Center
 # 
@@ -17,6 +11,13 @@ top_10k_words = set(top_10k_file.read().split())
 # OF ANY KIND, either express or implied. See the License for the specific language
 # governing permissions and limitations under the License.
 #
+
+import torch
+import re
+
+# from https://github.com/first20hours/google-10000-english, removed a-z letters
+top_10k_file = open('../data/top-10k-words.txt')
+top_10k_words = set(top_10k_file.read().split())
 
 print(len(top_10k_words))
 
