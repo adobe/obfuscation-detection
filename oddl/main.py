@@ -103,7 +103,7 @@ elif args.model == 'resnet':
     print('using resnet')
     model = ResNet()
 
-model_file = 'models/' + args.model_file
+model_file = '../models/' + args.model_file
 
 device = torch.device('cpu')
 if torch.cuda.is_available():
@@ -198,12 +198,18 @@ elif args.analyze:
         ffile.write(script)
 
     model.eval()
-    # eval_data = ScriptDataset(torch.load(DATA_DIR + 'dos2_data.pth'))
-    eval_data = ScriptDataset(torch.load(DATA_DIR + 'hubble_data.pth'))
-    eval_loader = torch.utils.data.DataLoader(eval_data, batch_size=BATCH_SIZE, shuffle=False)
-    # filenames = torch.load('val_filenames_list.pth')
-    # commands = torch.load('dos2_scripts.pth')
-    commands = torch.load(SCRIPTS_DIR + 'hubble_cmds.pth')
+    # eval_data = ScriptDataset(torch.load(DATA_DIR + 'dos_data.pth'))
+    # eval_data = ScriptDataset(torch.load(DATA_DIR + 'hubble_data.pth'))
+    # eval_data = ScriptDataset(torch.load(DATA_DIR + 'cb_data.pth'))
+    # eval_data = ScriptDataset(torch.load(DATA_DIR + 'cb2-2_data.pth'))
+    # eval_loader = torch.utils.data.DataLoader(eval_data, batch_size=BATCH_SIZE, shuffle=False)
+    # filenames = torch.load('../data/scripts/val_cmds_list.pth')
+    commands = torch.load('../data/scripts/val_cmds_list.pth')
+    # commands = torch.load(SCRIPTS_DIR + 'ps_scripts.pth')
+    # commands = torch.load(SCRIPTS_DIR + 'dos_cmds.pth')
+    # commands = torch.load(SCRIPTS_DIR + 'hubble_cmds.pth')
+    # commands = torch.load(SCRIPTS_DIR + 'cb_cmds.pth')
+    # commands = torch.load(SCRIPTS_DIR + 'cb2-2_cmds.pth')
     char_dict = torch.load(PREP_DIR + 'char_dict.pth')
     int_to_char_dict = {}
     for char in char_dict:
@@ -212,15 +218,16 @@ elif args.analyze:
     fn_file = open('fn.txt', 'w')
     fp_file = open('fp.txt', 'w')
     tp_file = open('tp.txt', 'w')
+    tp_file.write('process\n')
 
-    print(len(eval_loader))
-    print(len(eval_data))
+    # print(len(eval_loader))
+    # print(len(eval_data))
     print(len(commands))
 
     # analyze on all val samples
     y_true = []
     y_pred = []
-    for i, (data, label) in enumerate(eval_loader):
+    for i, (data, label) in enumerate(val_loader):
         if i % 1000 == 0:
             print(i)
         
@@ -238,24 +245,33 @@ elif args.analyze:
                 # fn_file.write('\n{:s}\n'.format(filenames[curr_idx]))
                 # fn_file.write('Script {:d}\n'.format(curr_idx))
                 # print_command(data[j], int_to_char_dict, fn_file)
-                fn_file.write('\nScript {:d}\n'.format(curr_idx))
-                fn_file.write(commands[curr_idx])
+                
+                # fn_file.write('\nScript {:d}\n'.format(curr_idx))
+                # fn_file.write(commands[curr_idx])
+            
+                fn_file.write('"{:s}"\n'.format(commands[curr_idx]))
             
             # false positives
             if curr_y_pred[j] == 1 and curr_y_true[j] == 0:
                 # fp_file.write('\n{:s}\n'.format(filenames[curr_idx]))
                 # fp_file.write('Script {:d}\n'.format(curr_idx))
                 # print_command(data[j], int_to_char_dict, fp_file)
-                fp_file.write('\nScript {:d}\n'.format(curr_idx))
-                fp_file.write(commands[curr_idx])
+                
+                # fp_file.write('\nScript {:d}\n'.format(curr_idx))
+                # fp_file.write(commands[curr_idx])
+                
+                fp_file.write('"{:s}"\n'.format(commands[curr_idx]))
 
             # true positives
             if curr_y_pred[j] == 1 and curr_y_true[j] == 1:
                 # tp_file.write('\n{:s}\n'.format(filenames[curr_idx]))
                 # tp_file.write('Script {:d}\n'.format(curr_idx))
                 # print_command(data[j], int_to_char_dict, tp_file)
-                tp_file.write('\nScript {:d}\n'.format(curr_idx))
-                tp_file.write(commands[curr_idx])
+                
+                # tp_file.write('\nScript {:d}\n'.format(curr_idx))
+                # tp_file.write(commands[curr_idx])
+
+                tp_file.write('"{:s}"\n'.format(commands[curr_idx]))
 
         y_pred += curr_y_pred
         y_true += curr_y_true
@@ -302,6 +318,7 @@ elif args.analyze:
     print('\trecall: {:f}'.format(recall))
     print('\tconfusion matrix (tn, fp, fn, tp): {:d}, {:d}, {:d}, {:d}'.format(tn, fp, fn, tp))
 elif args.run:
+    '''
     # run to classify the real-world data points from the dataset
     real_world_data = ScriptDataset(torch.load(DATA_DIR + 'flip_train_data_real_world.pth'))
     real_world_loader = torch.utils.data.DataLoader(real_world_data, batch_size=BATCH_SIZE, shuffle=False)
@@ -357,13 +374,14 @@ elif args.run:
 
     print('pred 0s:', preds.count(0))
     print('pred 1s:', preds.count(1))
-
     '''
+
+    
     # run classification on test-scripts directory
-    TEST_DIR = 'test-scripts/'
+    TEST_DIR = '../test-scripts/'
     for ffile in os.listdir(TEST_DIR):
         TENSOR_LENGTH = 1024
-        char_dict = torch.load('char_dict.pth')
+        char_dict = torch.load('../data/prep/char_dict.pth')
         try:
             ps_path = ffile
             ps_file = open(TEST_DIR + ps_path, 'rb')
@@ -386,13 +404,12 @@ elif args.run:
                     ps_tensor[char_dict[byte_char]][i] = 1
             ps_file.close()
             # run input through model
-            ps_tensor = ps_tensor.view(1, 1, ps_tensor.shape[0], ps_tensor.shape[1])
+            ps_tensor = ps_tensor.view(1, ps_tensor.shape[0], ps_tensor.shape[1]).to(device)
             output = model(ps_tensor)
             # 1 is positive obfuscated, 0 is negative non-obfuscated
             print(ffile + ' output:', int(torch.argmax(output[0])))
         except Exception as e:
             print(e)
-    '''
 else:
     # train model
     for i in range(epoch, EPOCHS):
@@ -408,7 +425,7 @@ else:
             loss.backward()
             optimizer.step()
 
-            if batch_idx % 200 == 0:
+            if batch_idx % 1000 == 0:
                 print('\t\tbatch {:d}: {:f}'.format(batch_idx, loss.data))
 
         # eval model

@@ -16,24 +16,34 @@ import torch
 
 DATA_DIR = '../data/processed_tensors/'
 SCRIPTS_DIR = '../data/scripts/'
-ps_tensors = torch.load(DATA_DIR + 'ps_data.pth')
-print('loaded ps data:', ps_tensors['x'].shape, ps_tensors['y'].shape)
-dos_tensors = torch.load(DATA_DIR + 'dos_data.pth')
-print('loaded dos data:', dos_tensors['x'].shape, dos_tensors['y'].shape)
-hubble_tensors = torch.load(DATA_DIR + 'hubble_data.pth')
-print('loaded hubble data:', hubble_tensors['x'].shape, hubble_tensors['y'].shape)
 
-ps_scripts = torch.load(SCRIPTS_DIR + 'ps_scripts.pth')
-dos_cmds = torch.load(SCRIPTS_DIR + 'dos_cmds.pth')
-hubble_cmds = torch.load(SCRIPTS_DIR + 'hubble_cmds.pth')
+all_tensors_x = []
+all_tensors_y = []
+all_scripts = []
 
-all_tensors_x = torch.cat((ps_tensors['x'], dos_tensors['x'], hubble_tensors['x']))
-all_tensors_y = torch.cat((ps_tensors['y'], dos_tensors['y'], hubble_tensors['y']))
-all_scripts = ps_scripts + dos_cmds + hubble_cmds
-# all_tensors_x = torch.cat((dos_tensors['x'], hubble_tensors['x']))
-# all_tensors_y = torch.cat((dos_tensors['y'], hubble_tensors['y']))
-# all_scripts = dos_cmds + hubble_cmds
-print('all tensors:', all_tensors_x.shape, all_tensors_y.shape)
+all_tensors_x += list(torch.load(DATA_DIR + 'ps_data.pth')['x'])
+all_tensors_y += list(torch.load(DATA_DIR + 'ps_data.pth')['y'])
+print('loaded ps data', len(all_tensors_x))
+all_tensors_x += list(torch.load(DATA_DIR + 'dos_data.pth')['x'])
+all_tensors_y += list(torch.load(DATA_DIR + 'dos_data.pth')['y'])
+print('loaded dos data', len(all_tensors_x))
+all_tensors_x += list(torch.load(DATA_DIR + 'hubble_data.pth')['x'])
+all_tensors_y += list(torch.load(DATA_DIR + 'hubble_data.pth')['y'])
+print('loaded hubble data', len(all_tensors_x))
+all_tensors_x += list(torch.load(DATA_DIR + 'cb_data.pth')['x'])
+all_tensors_y += list(torch.load(DATA_DIR + 'cb_data.pth')['y'])
+print('loaded cb data', len(all_tensors_x))
+all_tensors_x += list(torch.load(DATA_DIR + 'obf_data.pth')['x'])
+all_tensors_y += list(torch.load(DATA_DIR + 'obf_data.pth')['y'])
+print('loaded obf data', len(all_tensors_x))
+
+all_scripts += torch.load(SCRIPTS_DIR + 'ps_scripts.pth')
+all_scripts += torch.load(SCRIPTS_DIR + 'dos_cmds.pth')
+all_scripts += torch.load(SCRIPTS_DIR + 'hubble_cmds.pth')
+all_scripts += torch.load(SCRIPTS_DIR + 'cb_cmds.pth')
+all_scripts += torch.load(SCRIPTS_DIR + 'obf_cmds.pth')
+
+print('all tensors:', len(all_tensors_x), len(all_tensors_y))
 print('scripts:', len(all_scripts))
 
 # # for unk_word_ratio
@@ -55,7 +65,9 @@ test_y = []
 train_idx, val_idx, test_idx = torch.utils.data.random_split(range(len(all_tensors_x)), 
                                                             # hard-calculated 80-15-5 split
                                                             # [64000, 12000, 4000], # 80000 samples
-                                                            [25607, 4801, 1600], # 32008 split
+                                                            # [32000, 6000, 2000], # 40000 samples
+                                                            # [25607, 4801, 1600], # 32008 split
+                                                            [40000, 7500, 2500], # 50000 samples
                                                             generator=torch.Generator().manual_seed(42))
 for i in train_idx:
     train_x.append(all_tensors_x[i])
@@ -69,6 +81,11 @@ for i in test_idx:
     test_x.append(all_tensors_x[i])
     test_y.append(all_tensors_y[i])
     test_cmds.append(all_scripts[i])
+# free memory
+all_tensors_x = None
+all_tensors_y = None
+all_scripts = None
+# convert into tensor
 train_x = torch.stack(train_x)
 train_y = torch.stack(train_y)
 val_x = torch.stack(val_x)

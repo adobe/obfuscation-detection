@@ -21,11 +21,6 @@ dos_files = [open(DATA_DIR + 'STATIC_1-of-4_Out-DosConcatenatedCommand.txt', 'r'
             open(DATA_DIR + 'STATIC_2-of-4_Out-DosReversedCommand.txt', 'r', encoding='utf-16'),
             open(DATA_DIR + 'STATIC_3-of-4_Out-DosFORcodedCommand.txt', 'r', encoding='utf-16'),
             open(DATA_DIR + 'STATIC_4-of-4_Out-DosFINcodedCommand.txt', 'r', encoding='utf-16')]
-# dos_file = open('data/STATIC_1-of-4_Out-DosConcatenatedCommand.txt', 'r', encoding='utf-16')
-# dos_file = open('data/STATIC_2-of-4_Out-DosReversedCommand.txt', 'r', encoding='utf-16')
-# dos_file = open('data/STATIC_3-of-4_Out-DosFORcodedCommand.txt', 'r', encoding='utf-16')
-# dos_file = open('data/STATIC_4-of-4_Out-DosFINcodedCommand.txt', 'r', encoding='utf-16')
-
 
 print(CHAR_DICT)
 dos_lines = []
