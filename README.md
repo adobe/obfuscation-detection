@@ -81,6 +81,8 @@ Running model on new data:
 2. Put all script/command files in a new dir `test-scripts`
 3. Run `python main.py --model resnet --model_file resnet.pth --run`
 
+We have included our best model in `models/best-resnet.pth`!
+
 ### Contributing
 
 Contributions are welcomed! Read the [Contributing Guide](./CONTRIBUTING.md) for more information.
