@@ -18,15 +18,13 @@ import random
 random.seed(42)
 
 DATA_DIR = '../data/'
+CSV_DIR = 'processed_csv/'
 TOTAL_SAMPLES = 98123
-NUM_SAMPLES = 16402
-TENSOR_LENGTH = 4096
+NUM_SAMPLES = 41402
 # substrings that we found contained obfuscated code
 OBFUSCATED = torch.load(DATA_DIR + 'obfuscated-str.pth')
 # OBFUSCATED = []
 print('num obfuscated:', len(OBFUSCATED))
-CHAR_DICT = torch.load(DATA_DIR + 'prep/char_dict.pth')
-print(CHAR_DICT)
 cb_csv = pd.read_csv(DATA_DIR + 'win_cmds_cb.csv')
 print(cb_csv.shape[0])
 
@@ -36,9 +34,7 @@ print(cb_csv.loc[0]['process'])
 print(len(random_idx))
 print(random_idx[0:5])
 
-cb_x = torch.zeros(NUM_SAMPLES, len(CHAR_DICT) + 1, TENSOR_LENGTH, dtype=torch.int8)
-cb_y = torch.stack([torch.tensor([1, 0], dtype=torch.int8) for _ in range(NUM_SAMPLES)])
-cmds = []
+dataset = []
 x = 0
 num_pos = 0
 for i in range(len(random_idx)):
@@ -47,40 +43,20 @@ for i in range(len(random_idx)):
     x += 1
 
     cmd = cb_csv.loc[random_idx[i]]['process']
-    tensor_len = min(TENSOR_LENGTH, len(cmd))
-
-    # label x
-    for j in range(tensor_len):
-        char = cmd[j]
-        lower_char = char.lower()
-        if char.isupper() and lower_char in CHAR_DICT:
-            cb_x[i][len(CHAR_DICT)][j] = 1
-            char = lower_char
-        if char in CHAR_DICT:
-            cb_x[i][CHAR_DICT[char]][j] = 1
     
     # label y
+    is_obf = 0
     for obf in OBFUSCATED:
         if obf in cmd:
-            cb_y[i][0] = 0
-            cb_y[i][1] = 1
+            is_obf = 1
             num_pos += 1
+            break
+    
+    dataset.append([is_obf, cmd])
 
-    cmds.append(cmd)
+df = pd.DataFrame(dataset, columns=['label', 'command'])
+df.to_csv(DATA_DIR + CSV_DIR + 'cb-data.csv', index=False)
 
-print(cmds[0])
-print(cb_x[0][23][0])
-print(cb_x[0][73][0])
-print(cb_x[0][41][4])
-print(cb_x[0][73][4])
-print(cb_y[0])
-print(cb_x[1041][36][3])
-print(cb_x[1041][73][3])
-print(cb_y[1041])
+# sanity checks
 print('num pos:', num_pos)
-# print(cb_y[OBFUSCATED[2]])
-print(cb_x.shape, cb_x.dtype)
-print(cb_y.shape, cb_y.dtype)
-
-torch.save({'x': cb_x, 'y': cb_y}, DATA_DIR + 'processed_tensors/cb_data.pth')
-torch.save(cmds, DATA_DIR + 'scripts/cb_cmds.pth')
+print(len(df))

@@ -12,94 +12,45 @@
 # governing permissions and limitations under the License.
 #
 
+import pandas as pd
 import torch
 
-DATA_DIR = '../data/processed_tensors/'
-SCRIPTS_DIR = '../data/scripts/'
+DATA_DIR = '../data/processed_csv/'
 
-all_tensors_x = []
-all_tensors_y = []
-all_scripts = []
-
-all_tensors_x += list(torch.load(DATA_DIR + 'ps_data.pth')['x'])
-all_tensors_y += list(torch.load(DATA_DIR + 'ps_data.pth')['y'])
-print('loaded ps data', len(all_tensors_x))
-all_tensors_x += list(torch.load(DATA_DIR + 'dos_data.pth')['x'])
-all_tensors_y += list(torch.load(DATA_DIR + 'dos_data.pth')['y'])
-print('loaded dos data', len(all_tensors_x))
-all_tensors_x += list(torch.load(DATA_DIR + 'hubble_data.pth')['x'])
-all_tensors_y += list(torch.load(DATA_DIR + 'hubble_data.pth')['y'])
-print('loaded hubble data', len(all_tensors_x))
-all_tensors_x += list(torch.load(DATA_DIR + 'cb_data.pth')['x'])
-all_tensors_y += list(torch.load(DATA_DIR + 'cb_data.pth')['y'])
-print('loaded cb data', len(all_tensors_x))
-all_tensors_x += list(torch.load(DATA_DIR + 'obf_data.pth')['x'])
-all_tensors_y += list(torch.load(DATA_DIR + 'obf_data.pth')['y'])
-print('loaded obf data', len(all_tensors_x))
-
-all_scripts += torch.load(SCRIPTS_DIR + 'ps_scripts.pth')
-all_scripts += torch.load(SCRIPTS_DIR + 'dos_cmds.pth')
-all_scripts += torch.load(SCRIPTS_DIR + 'hubble_cmds.pth')
-all_scripts += torch.load(SCRIPTS_DIR + 'cb_cmds.pth')
-all_scripts += torch.load(SCRIPTS_DIR + 'obf_cmds.pth')
-
-print('all tensors:', len(all_tensors_x), len(all_tensors_y))
-print('scripts:', len(all_scripts))
-
-# # for unk_word_ratio
-# torch.save(all_scripts, 'all_scripts.pth')
-# print('saved all scripts')
-
-# train-dev-test split of 80-15-5
-train_cmds = []
-val_cmds = []
-test_cmds = []
+all_rows = []
+all_rows += pd.read_csv(DATA_DIR + 'ps-data.csv').values.tolist()
+all_rows += pd.read_csv(DATA_DIR + 'dos-data.csv').values.tolist()
+all_rows += pd.read_csv(DATA_DIR + 'hubble-data.csv').values.tolist()
+all_rows += pd.read_csv(DATA_DIR + 'cb-data.csv').values.tolist()
+all_rows += pd.read_csv(DATA_DIR + 'obf-data.csv').values.tolist()
+print(len(all_rows))
+print(all_rows[0])
 
 # split all data into train, val, test
-train_x = []
-train_y = []
-val_x = []
-val_y = []
-test_x = []
-test_y = []
-train_idx, val_idx, test_idx = torch.utils.data.random_split(range(len(all_tensors_x)), 
+train = []
+val = []
+test = []
+train_idx, val_idx, test_idx = torch.utils.data.random_split(range(len(all_rows)), 
                                                             # hard-calculated 80-15-5 split
-                                                            # [64000, 12000, 4000], # 80000 samples
-                                                            # [32000, 6000, 2000], # 40000 samples
-                                                            # [25607, 4801, 1600], # 32008 split
-                                                            [40000, 7500, 2500], # 50000 samples
+                                                            # [64000, 12000, 4000], # 80k samples
+                                                            # [32000, 6000, 2000], # 40k samples
+                                                            # [40000, 7500, 2500], # 50k samples
+                                                            [80000, 15000, 5000], #100k samples]
                                                             generator=torch.Generator().manual_seed(42))
 for i in train_idx:
-    train_x.append(all_tensors_x[i])
-    train_y.append(all_tensors_y[i])
-    train_cmds.append(all_scripts[i])
+    train.append(all_rows[i])
 for i in val_idx:
-    val_x.append(all_tensors_x[i])
-    val_y.append(all_tensors_y[i])
-    val_cmds.append(all_scripts[i])
+    val.append(all_rows[i])
 for i in test_idx:
-    test_x.append(all_tensors_x[i])
-    test_y.append(all_tensors_y[i])
-    test_cmds.append(all_scripts[i])
-# free memory
-all_tensors_x = None
-all_tensors_y = None
-all_scripts = None
-# convert into tensor
-train_x = torch.stack(train_x)
-train_y = torch.stack(train_y)
-val_x = torch.stack(val_x)
-val_y = torch.stack(val_y)
-test_x = torch.stack(test_x)
-test_y = torch.stack(test_y)
+    test.append(all_rows[i])
 
-print(train_x.shape, train_y.shape, train_x.dtype, train_y.dtype)
-print(val_x.shape, val_y.shape, val_x.dtype, val_y.dtype)
-print(test_x.shape, test_y.shape, test_x.dtype, test_y.dtype)
+train_df = pd.DataFrame(train, columns=['label', 'command'])
+val_df = pd.DataFrame(val, columns=['label', 'command'])
+test_df = pd.DataFrame(test, columns=['label', 'command'])
 
-torch.save({'x': train_x, 'y': train_y}, DATA_DIR + 'train_data.pth')
-torch.save({'x': val_x, 'y': val_y}, DATA_DIR + 'val_data.pth')
-torch.save({'x': test_x, 'y': test_y}, DATA_DIR + 'test_data.pth')
-torch.save(train_cmds, SCRIPTS_DIR + 'train_cmds_list.pth')
-torch.save(val_cmds, SCRIPTS_DIR + 'val_cmds_list.pth')
-torch.save(test_cmds, SCRIPTS_DIR + 'test_cmds_list.pth')
+train_df.to_csv(DATA_DIR + 'train-data.csv', index=False)
+val_df.to_csv(DATA_DIR + 'val-data.csv', index=False)
+test_df.to_csv(DATA_DIR + 'test-data.csv', index=False)
+
+# sanity checks
+print(len(train_df), len(val_df), len(test_df))

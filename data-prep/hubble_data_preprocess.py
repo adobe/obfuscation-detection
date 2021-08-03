@@ -18,14 +18,12 @@ import random
 random.seed(42)
 
 DATA_DIR = '../data/'
+CSV_DIR = 'processed_csv/'
 TOTAL_SAMPLES = 664793
-NUM_SAMPLES = 16402
-TENSOR_LENGTH = 4096
+NUM_SAMPLES = 41402
 # substrings that we found contained obfuscated code
 OBFUSCATED = torch.load(DATA_DIR + 'obfuscated-str.pth')
 print('num obfuscated:', len(OBFUSCATED))
-CHAR_DICT = torch.load(DATA_DIR + 'prep/char_dict.pth')
-print(CHAR_DICT)
 hubble_csv = pd.read_csv(DATA_DIR + 'win_cmds_hubble.csv')
 print(hubble_csv.shape[0])
 
@@ -35,9 +33,7 @@ print(hubble_csv.loc[0]['process'])
 print(len(random_idx))
 print(random_idx[0:5])
 
-hubble_x = torch.zeros(NUM_SAMPLES, len(CHAR_DICT) + 1, TENSOR_LENGTH, dtype=torch.int8)
-hubble_y = torch.stack([torch.tensor([1, 0], dtype=torch.int8) for _ in range(NUM_SAMPLES)])
-cmds = []
+dataset = []
 x = 0
 num_pos = 0
 for i in range(len(random_idx)):
@@ -46,40 +42,20 @@ for i in range(len(random_idx)):
     x += 1
 
     cmd = hubble_csv.loc[random_idx[i]]['process']
-    tensor_len = min(TENSOR_LENGTH, len(cmd))
-
-    # label x
-    for j in range(tensor_len):
-        char = cmd[j]
-        lower_char = char.lower()
-        if char.isupper() and lower_char in CHAR_DICT:
-            hubble_x[i][len(CHAR_DICT)][j] = 1
-            char = lower_char
-        if char in CHAR_DICT:
-            hubble_x[i][CHAR_DICT[char]][j] = 1
     
     # label y
+    is_obf = 0
     for obf in OBFUSCATED:
         if obf in cmd:
-            hubble_y[i][0] = 0
-            hubble_y[i][1] = 1
+            is_obf = 1
             num_pos += 1
+            break
 
-    cmds.append(cmd)
+    dataset.append([is_obf, cmd])
+    
+df = pd.DataFrame(dataset, columns=['label', 'command'])
+df.to_csv(DATA_DIR + CSV_DIR + 'hubble-data.csv', index=False)
 
-print(cmds[0])
-print(hubble_x[0][23][1])
-print(hubble_x[0][73][1])
-print(hubble_x[0][67][3])
-print(hubble_x[0][73][3])
-print(hubble_y[0])
-print(hubble_x[629][59][0])
-print(hubble_x[629][73][0])
-print(hubble_y[629])
+# sanity checks
 print('num pos:', num_pos)
-# print(hubble_y[OBFUSCATED[2]])
-print(hubble_x.shape, hubble_x.dtype)
-print(hubble_y.shape, hubble_y.dtype)
-
-torch.save({'x': hubble_x, 'y': hubble_y}, DATA_DIR + 'processed_tensors/hubble_data.pth')
-torch.save(cmds, DATA_DIR + 'scripts/hubble_cmds.pth')
+print(len(df))
