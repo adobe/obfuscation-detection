@@ -10,6 +10,44 @@ create models that are dynamic and can adapt to new types of information. Our pr
 learning techniques to detect command obfuscation.
 
 
+## Model Architecture
+
+### Input
+The input into the model is a single command from the command line. We represent a single command by each character individually. Each character is represented by a one-hot vector, a vector where all the values are 0 except for one index and the one index represented which character it is. We also include an extra case bit to differentiate between uppercase and lowercase characters. We found the frequency of the most common characters in our dataset and found 73 characters. With the case bit, each character one-hot vector is 74-dimensional. Each command is also represented by its first 4096 characters. If the command is longer than 4096 characters, the rest is cut off and if the command is shorter, then the rest is padded with zero's. Therefore, the input to our model is a 74x4096 matrix.
+
+Below is a simplified illustration of the input matrix, where the vertical axis represents the command and the horizontal axis represents the one-hot encoding.
+
+![input matrix](./res/input-matrix.png)
+
+### Model - it's a CNN
+Our model is a character-level deep convolutional neural network (CNN). What does this mean? Let's look at the first layer, turning our input matrix into a convolutional layer (conv layer). We look at a few characters that are close to each other, multiply some weights onto these characters, and come out with a resulting vector. In the image below, we first look at 3 characters depicted by the left red box. We multiply these 3 characters by the kernel weight vector and it results in the right red box vector. We continue this process for all 3-character blocks next to each other, depicted by the purple box. We stack all these resulting vectors to form a matrix that results in our 1st conv layer.
+
+![conv layer 1](./res/conv-layer-1.png)
+
+The 1st conv layer now contains a matrix of vectors, where each row carries semantic meaning of 3 characters. We continue this process of applying convolutions, thereby increasing the "window size" each row in the matrix sees. If we apply one more layer of convolutions to our example, the next conv layer (conv layer 2) will contain rows where each row carries semantic meaning of 5 characters. The higher the layer, the bigger the window size is. The bigger the window size, the more semantic meaning each row the conv layer can carry.
+
+![conv layer 2](./res/conv-layer-2.png)
+
+We apply this process of convolutions with weights to extract features from the input. After we apply a couple layers of convolutions, we finally make a decision by taking an average of the CNN's output (final layer). This average is then run through a final fully connected (FC) layer to make the final output which is a 2-dimensional vector. The first dimension is the model's prediction on how non-obfuscated the command is. The second dimension is the model's prediction on how obfuscated the command is. We take the max of these two dimensions to decide whether or not the command is obfuscated. For example, a prediction that the command is not obfuscated is <1, 0> while a prediction that the command is obfuscated is <0, 1>.
+
+![full model](./res/full-model.png)
+
+### Model - and it's also a ResNet
+Our model also has aspects of a ResNet. Since we are using this CNN for a language task, we found it natural to apply the same types of methods in RNNs as CNNs. Now you might ask why not just use RNNs? Well, in a nutshell, CNNs are faster than RNNs. CNNs are able to do parallel computations while RNNs rely on the previous sequence before it calculates the current sequence. Since our task is character-level, we don't require this task to be a sequence task. Therefore, we believe CNNs better capture the semantics of this task.
+
+So, what ResNet components are there? Here they are:
+- Residual connection: The output of each layer are summed up for each layer, then this residual block is added to the final CNN output layer. This helps solve the problem of vanishing gradients in models with many layers.
+- Skip connection: The output of the previous layer is added onto the output of the current layer. This is so if any layer hurts the model architecture, it can be skipped by regularization.
+- Gated activation function: For each CNN layer, we apply a sigmoid activation on half the filters and a tanh activation on the other half, then element-wise multiply these two activations together. This has shown better performance in signal-based applications, such as WaveNet.
+
+![resnet](./res/resnet.png)
+
+Upgrading our model from a plain CNN to a CNN + ResNet gave us much better performance!
+
+### Results
+Overall, our model performs very well on windows and linux commands!
+
+
 ## Installation
 
 ### Pre-requisites

@@ -45,6 +45,7 @@ parser.add_argument('--test', help='eval model on test set', action='store_true'
 parser.add_argument('--model', default='cnn', help='model to run (mlp, deep-mlp, cnn, deep-cnn)')
 parser.add_argument('--model_file', default='cnn-shallow-conv-1-fc-2048-1024.pth', help='model file to save/load')
 parser.add_argument('--cuda_device', default=0, type=int, help='which cuda device to use')
+parser.add_argument('--os', default='win', help='which os data to run on win/linux/all')
 args = parser.parse_args()
 
 if args.model == 'mlp':
@@ -112,8 +113,20 @@ mse = nn.MSELoss()
 epoch = 0
 
 # load data
-train_data = CommandDataset(DATA_DIR + 'train-data.csv')
-val_data = CommandDataset(DATA_DIR + 'val-data.csv')
+if args.os == 'win':
+    TRAIN_CSV = 'train-data.csv'
+    VAL_CSV = 'val-data.csv'
+    print('using win dataset')
+elif args.os == 'linux':
+    TRAIN_CSV = 'linux-train-data.csv'
+    VAL_CSV = 'linux-val-data.csv'
+    print('using linux dataset')
+else:
+    TRAIN_CSV = 'train-data.csv'
+    VAL_CSV = 'val-data.csv'
+    print('using win/linux dataset')
+train_data = CommandDataset(DATA_DIR + TRAIN_CSV)
+val_data = CommandDataset(DATA_DIR + VAL_CSV)
 train_loader = torch.utils.data.DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = torch.utils.data.DataLoader(val_data, batch_size=BATCH_SIZE, shuffle=False)
 print('loaded data:', len(train_data), len(val_data))
