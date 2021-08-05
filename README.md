@@ -17,7 +17,7 @@ The input into the model is a single command from the command line. We represent
 
 Below is a simplified illustration of the input matrix, where the vertical axis represents the command and the horizontal axis represents the one-hot encoding.
 
-![input matrix](./res/input-matrix.png)
+<div style="text-align:center"><img src="./res/input-matrix.png" alt="input matrix" style="width:300px;"/></div>
 
 ### Model - it's a CNN
 Our model is a character-level deep convolutional neural network (CNN). What does this mean? Let's look at the first layer, turning our input matrix into a convolutional layer (conv layer). We look at a few characters that are close to each other, multiply some weights onto these characters, and come out with a resulting vector. In the image below, we first look at 3 characters depicted by the left red box. We multiply these 3 characters by the kernel weight vector and it results in the right red box vector. We continue this process for all 3-character blocks next to each other, depicted by the purple box. We stack all these resulting vectors to form a matrix that results in our 1st conv layer.
