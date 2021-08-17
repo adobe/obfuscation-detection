@@ -9,7 +9,6 @@ test-scripts/
 !models/best-resnet-all.pth
 !models/best-resnet-linux.pth
 !models/best-resnet-windows.pth
-!requirements.txt
-!obfclassifier/files/*.pth
+!obfuscation_detection/files/*.pth
 dist/
 *.egg-info
