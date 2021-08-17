@@ -71,7 +71,8 @@ for i in random_1_layer_idx:
         cmd = '"{:s}"'.format(LINUX_CMDS.loc[i]['command'])
         mutator_list = [MUTATORS[random.randint(0, len(MUTATORS) - 1)]]
         bashfuscated = bashfuscate(cmd, mutator_list)
-        dataset.append([1, mutator_list[0], bashfuscated.stdout])
+        # dataset.append([1, mutator_list[0], bashfuscated.stdout])
+        dataset.append([1, bashfuscated.stdout])
     except Exception as e:
         print('error')
         print(e)
@@ -90,14 +91,16 @@ for i in random_2_layer_idx:
         cmd = '"{:s}"'.format(LINUX_CMDS.loc[i]['command'])
         mutator_list = [MUTATORS[random.randint(0, len(MUTATORS) - 1)] for _ in range(2)]
         bashfuscated = bashfuscate(cmd, mutator_list)
-        dataset.append([1, ', '.join(mutator_list), bashfuscated.stdout])
+        # dataset.append([1, ', '.join(mutator_list), bashfuscated.stdout])
+        dataset.append([1, bashfuscated.stdout])
     except Exception as e:
         print('error')
         print(e)
         unparseable += 1
 print('done 2 type')
 
-df = pd.DataFrame(dataset, columns=['label', 'obf technique', 'command'])
+# df = pd.DataFrame(dataset, columns=['label', 'obf technique', 'command'])
+df = pd.DataFrame(dataset, columns=['label', 'command'])
 df.to_csv(DATA_DIR + CSV_DIR + 'linux-data.csv', index=False)
 
 # sanity checks

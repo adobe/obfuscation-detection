@@ -9,6 +9,26 @@ types of malware and obfuscation techniques. Deep learning has been used in vari
 create models that are dynamic and can adapt to new types of information. Our project uses deep 
 learning techniques to detect command obfuscation.
 
+## Usage - Quick Installation
+
+You can install our package through pip!
+```
+pip install obfuscation-detection
+```
+
+This is a basic usage of our package:
+```
+import obfuscation_detection as od
+
+oc = od.ObfuscationClassifier(od.PlatformType.ALL)
+commands = ['cmd.exe /c "echo Invoke-DOSfuscation"',
+            'cm%windir:~ -4, -3%.e^Xe,;^,/^C",;,S^Et ^^o^=fus^cat^ion&,;,^se^T ^ ^ ^B^=o^ke-D^OS&&,;,s^Et^^ d^=ec^ho I^nv&&,;,C^Al^l,;,^%^D%^%B%^%o^%"',
+            'cat /etc/passwd']
+classifications = oc(commands)
+
+# 1 is obfuscated, 0 is non-obfuscated
+print(classifications) # [0, 1, 0]
+```
 
 ## Model Architecture
 
@@ -48,7 +68,7 @@ Upgrading our model from a plain CNN to a CNN + ResNet gave us much better perfo
 Overall, our model performs very well on windows and linux commands!
 
 
-## Installation
+## Development
 
 ### Pre-requisites
 1. Make empty directories for runtime
@@ -77,14 +97,19 @@ mkdir models
 
 2. `python char_dict.py`: creates a python dict of the most common characters mapped to a numeric index
 
-3. `python ps_data_preprocess.py`: creates tensors for the powershell corpus dataset
+3. `python ps_data_preprocess.py`: creates dataset for the powershell corpus dataset
 
-4. `python dos_data_preprocess.py`: creates tensors for the DOSfuscated commands
+4. `python dos_data_preprocess.py`: creates dataset  for the DOSfuscated commands
 
-5. `python hubble_data_preprocess.py` and `python cb_data_preprocess.py`: creates tensors for internal Adobe data. Replace this step with other data you may find on the internet.
+5. `python hubble_data_preprocess.py` and `python cb_data_preprocess.py`: creates dataset  for internal Adobe data. Replace this step with other data you may find on the internet.
 
-6. `python data_preprocess.py`: creates train/dev/test tensor split by accumulating all tensors.
+6. `python win_data_preprocess.py`: creates train/dev/test tensor split by accumulating all windows data.
 
+7. `python linux_obf_data_preprocess.py`: load internal Adobe linux commands and obfuscate them
+
+8. `python linux_data_preprocess.py`: creates train/dev/test tensor split with all linux data
+
+9. `python all_data_preprocess.py`: combines windows and linux train/dev/test sets together for a big train/dev/test dataset.
 
 ### Usage
 

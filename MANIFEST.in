@@ -1,0 +1,4 @@
+include obfuscation_detection/files/best-resnet-windows.pth
+include obfuscation_detection/files/best-resnet-linux.pth
+include obfuscation_detection/files/best-resnet-all.pth
+include obfuscation_detection/files/char_dict.pth

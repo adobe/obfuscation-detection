@@ -6,4 +6,10 @@ models/*
 test-scripts/
 *.txt
 *.pth
-!models/best-resnet.pth
+!models/best-resnet-all.pth
+!models/best-resnet-linux.pth
+!models/best-resnet-windows.pth
+!requirements.txt
+!obfclassifier/files/*.pth
+dist/
+*.egg-info

@@ -14,12 +14,17 @@
 
 import pandas as pd
 import torch
+import random
 
 DATA_DIR = '../data/processed_csv/'
 
 all_rows = pd.read_csv(DATA_DIR + 'linux-data.csv').values.tolist()
 print(len(all_rows))
 print(all_rows[0])
+
+random_idx = random.sample(range(len(all_rows)), 20)
+for i in random_idx:
+    print(all_rows[i])
 
 # split all data into train, val, test
 train = []
@@ -39,6 +44,9 @@ for i in test_idx:
 train_df = pd.DataFrame(train, columns=['label', 'obf technique', 'command'])
 val_df = pd.DataFrame(val, columns=['label', 'obf technique', 'command'])
 test_df = pd.DataFrame(test, columns=['label', 'obf technique', 'command'])
+# train_df = pd.DataFrame(train, columns=['label', 'command'])
+# val_df = pd.DataFrame(val, columns=['label', 'command'])
+# test_df = pd.DataFrame(test, columns=['label', 'command'])
 
 train_df.to_csv(DATA_DIR + 'linux-train-data.csv', index=False)
 val_df.to_csv(DATA_DIR + 'linux-val-data.csv', index=False)
