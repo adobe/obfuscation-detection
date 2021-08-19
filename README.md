@@ -1,4 +1,4 @@
-# Obfuscation Detection with Deep Learning
+# Command Obfuscation Detection using Deep Learning
 
 Command obfuscation is a technique to make a piece of code intentionally hard-to-read, but still 
 execute the same functionality. Malicious attackers often abuse obfuscation to make their malicious 
