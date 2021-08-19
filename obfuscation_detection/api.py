@@ -25,7 +25,7 @@ class PlatformType(Enum):
     ALL: str='all'
 
 class ObfuscationClassifier:
-    def __init__(self, platform: PlatformType):
+    def __init__(self, platform: PlatformType, gpu: bool = False):
         # set platform type
         if platform == PlatformType.WINDOWS:
             model_file = pkg_resources.resource_filename(__name__, 'files/best-resnet-windows.pth')
@@ -37,39 +37,47 @@ class ObfuscationClassifier:
             raise Exception("Unknown platform type")
         
         # init device, model
-        self.device = torch.device('cpu')
-        if torch.cuda.is_available():
-            self.device = torch.device('cuda')
-        self.model = ResNet()
-        self.optimizer = torch.optim.Adam(self.model.parameters())
-        self.char_dict = torch.load(pkg_resources.resource_filename(__name__, 'files/char_dict.pth'))
+        device = torch.device('cpu')
+        if gpu and torch.cuda.is_available():
+            device = torch.device('cuda')
+        model = ResNet().to(device)
+        optimizer = torch.optim.Adam(model.parameters())
 
         # load model
-        checkpoint = torch.load(model_file, map_location=self.device)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        self.model.eval()
+        checkpoint = torch.load(model_file, map_location=device)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        model.eval()
+
+        self.device = device
+        self.model = model
+        self.optimizer = optimizer
+        self.char_dict = torch.load(pkg_resources.resource_filename(__name__, 'files/char_dict.pth'))
+
     
     def __call__(self, commands_list: List[str]):
         BATCH_SIZE = 64
         indices = list(range(0, len(commands_list), BATCH_SIZE))
+        res = []
         for i in range(len(indices)):
             # split commands into batches
             if i < len(indices) - 1:
-                commands = commands_list[i:i+1]
+                commands = commands_list[indices[i]:indices[i+1]]
             else:
-                commands = commands_list[i:]
+                commands = commands_list[indices[i]:]
             x = self._convert_batch(commands)
             y = self.model(x)
-            # return 1 for obfuscated, 0 o.w.
-            return list(torch.max(y, dim=1).indices.cpu().numpy())
+            y = list(torch.max(y, dim=1).indices.cpu().numpy())
+            res += y
+        # return 1 for obfuscated, 0 o.w.
+        return res
     
     def _convert_batch(self, commands_list):
         TENSOR_LENGTH = 4096
         # convert batch of command strings into tensors
         x = torch.zeros(len(commands_list), len(self.char_dict) + 1, TENSOR_LENGTH).to(self.device)
         for i in range(len(commands_list)):
-            cmd = commands_list[i]
+            cmd = str(commands_list[i])
             tensor_len = min(TENSOR_LENGTH, len(cmd))
             for j in range(tensor_len):
                 char = cmd[j]

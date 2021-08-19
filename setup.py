@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="obfuscation-detection",
-    version="0.3",
+    version="0.7.2",
     author="Wilson Tang",
     author_email="wilson.tang06@gmail.com",
     description="Python module for obfuscation classification in command line executions",
