@@ -9,6 +9,9 @@ types of malware and obfuscation techniques. Deep learning has been used in vari
 create models that are dynamic and can adapt to new types of information. Our project uses deep 
 learning techniques to detect command obfuscation.
 
+- Blog post: https://medium.com/adobetech/using-deep-learning-to-better-detect-command-obfuscation-965b448973e0
+- Pip package: https://pypi.org/project/obfuscation-detection/
+
 ## Usage - Quick Installation
 
 You can install our package through pip!
