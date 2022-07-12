@@ -79,6 +79,7 @@ Overall, our model performs very well on windows and linux commands!
 mkdir data
 mkdir data/prep
 mkdir data/processed_tensors
+mkdir data/processed_csv
 mkdir data/scripts
 mkdir models
 ```
@@ -116,9 +117,9 @@ mkdir models
 
 ### Usage
 
-`cd ../oddl`, then run `python main.py` with the given options!
+`cd ../scripts`, then run `python train.py` with the given options!
 
-`main.py`:
+`train.py`:
 - `--model` - choose a model architecture
 - `--model-file` - filename of model checkpoint
 - `--cuda-device` - which cuda device to use
@@ -135,19 +136,19 @@ mkdir models
 ### Examples
 
 Training model:
-- From scratch: `python main.py --model resnet --model_file resnet.pth --reset`
-- From checkpoint: `python main.py --model resnet --model_file resnet.pth`
+- From scratch: `python train.py --model resnet --model_file resnet.pth --reset`
+- From checkpoint: `python train.py --model resnet --model_file resnet.pth`
 
-Eval model: `python main.py --model resnet --model_file resnet.pth --eval`
+Eval model: `python train.py --model resnet --model_file resnet.pth --eval`
 
-Test model: `python main.py --model resnet --model_file resnet.pth --test`
+Test model: `python train.py --model resnet --model_file resnet.pth --test`
 
 Running model on new data:
 1. Put each separate script/command in its own file
 2. Put all script/command files in a new dir `test-scripts`
-3. Run `python main.py --model resnet --model_file resnet.pth --run`
+3. Run `python train.py --model resnet --model_file resnet.pth --run`
 
-We have included our best model in `models/best-resnet.pth`!
+We have included our best model in `models/best-resnet-*.pth`!
 
 ### Contributing
 
