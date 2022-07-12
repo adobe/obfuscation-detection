@@ -5,6 +5,7 @@ data/
 models/*
 test-scripts/
 *.txt
+!requirements.txt
 *.pth
 !models/best-resnet-all.pth
 !models/best-resnet-linux.pth

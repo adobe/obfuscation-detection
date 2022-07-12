@@ -74,7 +74,9 @@ Overall, our model performs very well on windows and linux commands!
 ## Development
 
 ### Pre-requisites
-1. Make empty directories for runtime
+1. Install python dependencies: `pip install -r requirements.txt`
+
+2. Make empty directories for runtime
 ```
 mkdir data
 mkdir data/prep
@@ -83,13 +85,13 @@ mkdir data/scripts
 mkdir models
 ```
 
-2. Download the Powershell Corpus: https://aka.ms/PowerShellCorpus. Unzip the file into the `data` directory
+3. Download the Powershell Corpus: https://aka.ms/PowerShellCorpus. Unzip the file into the `data` directory
 
-3. Download PS corpus labels: https://github.com/danielbohannon/Revoke-Obfuscation. Clone the repo in the same-level directory as this repo. The labels are found in the `DataScience` folder.
+4. Download PS corpus labels: https://github.com/danielbohannon/Revoke-Obfuscation. Clone the repo in the same-level directory as this repo. The labels are found in the `DataScience` folder.
 
-4. Download DOSfuscated commands: https://github.com/danielbohannon/Invoke-DOSfuscation/tree/master/Samples. Download the four `STATIC_#_of_4_*` files and put them inside the `data` directory.
+5. Download DOSfuscated commands: https://github.com/danielbohannon/Invoke-DOSfuscation/tree/master/Samples. Download the four `STATIC_#_of_4_*` files and put them inside the `data` directory.
 
-5. We also use internal Adobe command line executions as a bulk of our training data. We may not release this dataset to the public, so we encourage you to either not exclude this dataset or find an open-source command prompt dataset on the internet.
+6. We also use internal Adobe command line executions as a bulk of our training data. We may not release this dataset to the public, so we encourage you to either not exclude this dataset or find an open-source command prompt dataset on the internet.
 
 
 ### Data Prep
