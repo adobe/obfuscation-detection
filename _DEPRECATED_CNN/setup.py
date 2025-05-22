@@ -12,9 +12,6 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/adobe/obfuscation-detection",
-    package_data={
-        "obfuscation_detection": ["models/od-cmdexe-xgb-model.json"],
-    },
     project_urls={
         "Bug Tracker": "https://github.com/adobe/obfuscation-detection/issues",
     },
@@ -24,7 +21,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     packages=setuptools.find_packages(),
-    install_requires = ['xgboost', 'scikit-learn', 'numpy'],
+    install_requires = ['xgboost', 'scikit-learn'],
     python_requires=">=3.10",
     include_package_data=True,
 )
